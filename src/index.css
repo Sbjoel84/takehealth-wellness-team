@@ -1,0 +1,262 @@
+/* -*- css -*- */
+/* stylelint-disable */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* tailwindcss */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* takehealth Design System
+   Modern Wellness Aesthetic: Calming, Trustworthy, Vibrant
+   Colors in HSL for proper theming
+*/
+
+@layer base {
+  :root {
+    /* Core Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 145 88% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 30% 15%;
+
+    /* Primary - Dark Green (Trust & Stability) */
+    --primary: 145 88% 20%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Primary Green (Vitality & Energy) */
+    --secondary: 90 61% 47%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted - Light Green */
+    --muted: 90 30% 92%;
+    --muted-foreground: 145 20% 45%;
+
+    /* Accent - Light Primary Green */
+    --accent: 90 40% 85%;
+    --accent-foreground: 145 88% 20%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 90 25% 85%;
+    --input: 90 25% 85%;
+    --ring: 145 88% 20%;
+
+    --radius: 0.75rem;
+
+    /* Logo Text Color */
+    --logo: 145 88% 20%;
+
+    /* Dark Green for Footer */
+    --navy-green: 145 88% 20%;
+    --navy-green-light: 145 88% 28%;
+
+    /* Extended Palette */
+    --wellness-emerald: 145 88% 20%;
+    --wellness-sage: 90 30% 75%;
+    --wellness-cream: 45 40% 96%;
+    --wellness-warm: 32 70% 92%;
+    --wellness-coral: 12 80% 62%;
+    --wellness-coral-light: 12 80% 95%;
+    --wellness-teal-dark: 145 88% 20%;
+    --wellness-teal-light: 90 40% 80%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(145 88% 20%) 0%, hsl(90 61% 47%) 50%, hsl(90 40% 55%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(90 61% 47%) 0%, hsl(90 60% 55%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    --gradient-overlay: linear-gradient(180deg, hsla(145, 88%, 15%, 0.85) 0%, hsla(145, 88%, 20%, 0.75) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsla(145, 30%, 15%, 0.06);
+    --shadow-md: 0 4px 20px hsla(145, 30%, 15%, 0.08);
+    --shadow-lg: 0 8px 40px hsla(145, 30%, 15%, 0.12);
+    --shadow-glow: 0 0 40px hsla(145, 88%, 20%, 0.2);
+
+    /* Sidebar (keeping defaults) */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 145 88% 20%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 90 30% 90%;
+    --sidebar-accent-foreground: 145 30% 15%;
+    --sidebar-border: 90 25% 85%;
+    --sidebar-ring: 145 88% 20%;
+  }
+
+  .dark {
+    --background: 145 30% 8%;
+    --foreground: 90 20% 95%;
+
+    --card: 145 25% 12%;
+    --card-foreground: 90 20% 95%;
+
+    --popover: 145 25% 12%;
+    --popover-foreground: 90 20% 95%;
+
+    --primary: 145 88% 45%;
+    --primary-foreground: 145 30% 8%;
+
+    --secondary: 90 55% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 145 20% 18%;
+    --muted-foreground: 90 10% 60%;
+
+    --accent: 145 30% 20%;
+    --accent-foreground: 90 40% 75%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 145 20% 20%;
+    --input: 145 20% 20%;
+    --ring: 145 88% 45%;
+
+    --sidebar-background: 145 25% 10%;
+    --sidebar-foreground: 90 15% 90%;
+    --sidebar-primary: 145 88% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 145 20% 18%;
+    --sidebar-accent-foreground: 90 15% 90%;
+    --sidebar-border: 145 20% 20%;
+    --sidebar-ring: 145 88% 45%;
+
+    /* Logo Text Color - Dark Mode */
+    --logo: 145 88% 45%;
+
+    /* Dark Green for Footer - Dark Mode */
+    --navy-green: 145 88% 45%;
+    --navy-green-light: 145 88% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Navy Green Utility */
+  .bg-navy-green {
+    background-color: hsl(var(--navy-green));
+  }
+
+  .text-navy-green {
+    color: hsl(var(--navy-green));
+  }
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .hero-overlay {
+    background: var(--gradient-overlay);
+  }
+
+  /* Card Styles */
+  .card-wellness {
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-md);
+    @apply rounded-2xl border border-border/50 transition-all duration-300;
+  }
+
+  .card-wellness:hover {
+    box-shadow: var(--shadow-lg);
+    @apply -translate-y-1;
+  }
+
+  /* Button Styles */
+  .btn-hero {
+    @apply px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300;
+    background: var(--gradient-warm);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-hero:hover {
+    @apply scale-105;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .btn-outline-hero {
+    @apply px-8 py-4 rounded-full font-semibold text-lg border-2 border-white/80 text-white transition-all duration-300 backdrop-blur-sm;
+    background: hsla(0, 0%, 100%, 0.1);
+  }
+
+  .btn-outline-hero:hover {
+    @apply bg-white/20 scale-105;
+  }
+
+  /* Section Styles */
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32 px-4 md:px-8;
+  }
+
+  /* Text Gradient */
+  .text-gradient {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Text Logo Color */
+  .text-logo {
+    color: hsl(var(--logo));
+  }
+
+  /* Decorative Elements */
+  .wellness-blob {
+    @apply absolute rounded-full opacity-30 blur-3xl;
+    background: hsl(var(--primary));
+  }
+
+  /* Nav Link Active */
+  .nav-link-active {
+    @apply text-primary font-medium;
+    position: relative;
+  }
+
+  .nav-link-active::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-full;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}

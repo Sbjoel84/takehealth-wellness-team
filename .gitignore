@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node modules
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!..json
+.idea
+.DS_StoreStore
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+
+# Package manager lockfiles
+bun.lockb
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Backend (NestJS)
+takehealth-backend/node_modules
+takehealth-backend/dist
+takehealth-backend/build
+takehealth-backend/*.log
+takehealth-backend/coverage
+takehealth-backend/.env
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+*.tgz
+.cache
+*.tsbuildinfo
+
+# OS specific
+Thumbs.db
