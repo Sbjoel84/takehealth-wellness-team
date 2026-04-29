@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ComingSoon } from "@/components/ui/ComingSoon";
 import {
   Send,
   Search,
@@ -10,7 +11,6 @@ import {
   CheckCheck,
   Paperclip,
   MoreVertical,
-  Star,
   Stethoscope,
   Brain,
   Dumbbell,
@@ -206,7 +206,11 @@ const CommunicationHub = () => {
   const RoleIcon = selectedConversation ? roleIcons[selectedConversation.participantRole] : User;
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-4">
+    <div className="relative h-[calc(100vh-8rem)] flex gap-4">
+      <ComingSoon
+        title="Communication Hub"
+        description="In-app messaging between admins and clients is under development. This will be available once the messaging API is ready."
+      />
       {/* Conversations List */}
       <Card className="w-80 flex flex-col">
         <CardHeader className="pb-3">

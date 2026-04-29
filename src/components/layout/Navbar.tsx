@@ -35,51 +35,51 @@ export function Navbar() {
   // Dynamic classes based on scroll and page
   const getNavBgClass = () => {
     if (isHomePage && !isScrolled) {
-      return "bg-[#7FB25A]/80 backdrop-blur-sm";
+      return "bg-white";
     }
-    return "bg-emerald-800/95 backdrop-blur-md";
+    return "bg-white";
   };
 
   const getTextColorClass = () => {
     if (isHomePage && !isScrolled) {
-      return "text-white";
+      return "text-gray-800";
     }
-    return "text-white";
+    return "text-gray-800";
   };
 
   const getLinkHoverClass = () => {
     if (isHomePage && !isScrolled) {
-      return "hover:text-white hover:bg-[#7FB25A]/50";
+      return "hover:text-gray-900 hover:bg-gray-100";
     }
-    return "hover:text-lime-200 hover:bg-emerald-700/50";
+    return "hover:text-gray-900 hover:bg-gray-100";
   };
 
   const getActiveLinkClass = () => {
     if (isHomePage && !isScrolled) {
-      return "bg-white/30 text-white";
+      return "bg-gray-200 text-gray-900";
     }
-    return "bg-emerald-600/50 text-white";
+    return "bg-gray-200 text-gray-900";
   };
 
   const getMobileMenuBgClass = () => {
     if (isHomePage && !isScrolled) {
-      return "bg-[#7FB25A]/98";
+      return "bg-white";
     }
-    return "bg-emerald-900/98";
+    return "bg-white";
   };
 
   const getMobileTextColorClass = () => {
     if (isHomePage && !isScrolled) {
-      return "text-white";
+      return "text-gray-800";
     }
-    return "text-white";
+    return "text-gray-800";
   };
 
   const getMobileLinkHoverClass = () => {
     if (isHomePage && !isScrolled) {
-      return "hover:text-white/80";
+      return "hover:text-gray-900";
     }
-    return "hover:text-emerald-300";
+    return "hover:text-gray-900";
   };
 
   return (
@@ -121,13 +121,13 @@ export function Navbar() {
             <Button
               variant="ghost"
               asChild
-              className={`${getTextColorClass()} hover:bg-white/20 hover:text-white`}
+              className={`${getTextColorClass()} hover:bg-gray-100 hover:text-gray-900`}
             >
               <Link to="/login">Sign In</Link>
             </Button>
             <Button
               asChild
-              className={isHomePage && !isScrolled ? "bg-white text-[#7FB25A] hover:bg-white/90 font-semibold border-0" : "bg-emerald-500 hover:bg-emerald-600 text-white border-0"}
+              className="bg-[#7FB25A] hover:bg-[#6a9f4b] text-white border-0"
             >
               <Link to="/get-started">Get Started</Link>
             </Button>
@@ -151,9 +151,7 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className={`lg:hidden ${getMobileMenuBgClass()} backdrop-blur-md border-t ${
-              isHomePage && !isScrolled ? "border-emerald-300/50" : "border-emerald-700/50"
-            }`}
+            className={`lg:hidden ${getMobileMenuBgClass()} border-t border-gray-200`}
           >
             <div className="container mx-auto px-4 py-6 space-y-4">
               {navLinks.map((link) => (
@@ -163,23 +161,17 @@ export function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className={`block py-3 font-medium transition-colors ${
                     isActive(link.href)
-                      ? isHomePage && !isScrolled ? "text-white font-bold" : "text-emerald-300"
+                      ? "text-gray-900 font-bold"
                       : `${getMobileTextColorClass()} ${getMobileLinkHoverClass()}`
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
-              <div className={`pt-4 space-y-3 border-t ${
-                isHomePage && !isScrolled ? "border-emerald-300/50" : "border-emerald-700/50"
-              }`}>
+              <div className="pt-4 space-y-3 border-t border-gray-200">
                 <Button
                   variant="outline"
-                  className={`w-full ${
-                    isHomePage && !isScrolled
-                      ? "border-white text-white hover:bg-white/20"
-                      : "border-emerald-500 text-emerald-300 hover:bg-emerald-500/20"
-                  }`}
+                  className="w-full border-gray-300 text-gray-800 hover:bg-gray-100"
                   asChild
                 >
                   <Link to="/login" onClick={() => setIsOpen(false)}>
@@ -187,11 +179,7 @@ export function Navbar() {
                   </Link>
                 </Button>
                 <Button
-                  className={`w-full ${
-                    isHomePage && !isScrolled
-                      ? "bg-white text-[#7FB25A] hover:bg-white/90 font-semibold"
-                      : "bg-emerald-500 hover:bg-emerald-600 text-white"
-                  }`}
+                  className="w-full bg-[#7FB25A] hover:bg-[#6a9f4b] text-white"
                   asChild
                 >
                   <Link to="/get-started" onClick={() => setIsOpen(false)}>

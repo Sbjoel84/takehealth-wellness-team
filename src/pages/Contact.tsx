@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { motion } from "framer-motion";
-import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { Phone, Mail, Clock, Send, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import contactImage from "@/assets/Spa & Massage.jpeg";
+
+const FORMSPREE_URL = import.meta.env.VITE_FORMSPREE_URL as string | undefined;
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,16 +19,49 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const form = e.target as HTMLFormElement;
+    const data = Object.fromEntries(new FormData(form).entries());
 
-    toast({
-      title: "Message Sent!",
-      description: "Thank you for reaching out. We'll get back to you soon.",
-    });
+    try {
+      if (FORMSPREE_URL) {
+        const res = await fetch(FORMSPREE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(data),
+        });
 
-    setIsSubmitting(false);
-    (e.target as HTMLFormElement).reset();
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error((json as { error?: string }).error || "Submission failed");
+        }
+
+        toast({
+          title: "Message Sent!",
+          description: "Thank you for reaching out. We'll get back to you within 24 hours.",
+        });
+        form.reset();
+      } else {
+        // No Formspree configured — open mailto as fallback
+        const subject = encodeURIComponent(`Contact from ${data.firstName} ${data.lastName}`);
+        const body = encodeURIComponent(
+          `Name: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\nPhone: ${data.phone || "N/A"}\nService: ${data.service || "N/A"}\n\n${data.message}`
+        );
+        window.open(`mailto:hello@takehealthglobal.com?subject=${subject}&body=${body}`);
+        toast({
+          title: "Opening your email client",
+          description: "Your default email app will open with the message pre-filled.",
+        });
+        form.reset();
+      }
+    } catch (err) {
+      toast({
+        title: "Failed to send message",
+        description: err instanceof Error ? err.message : "Please try again or email us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -241,17 +276,18 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Map Placeholder */}
-      <section className="h-96 bg-muted relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-            <p className="text-muted-foreground">Google Map Integration</p>
-            <p className="text-sm text-muted-foreground/70">
-              Premium Plaza, Kubwa, FCT Nigeria
-            </p>
-          </div>
-        </div>
+      {/* Map */}
+      <section className="h-96 w-full">
+        <iframe 
+          src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d62778.88610797943!2d7.3624605999999995!3d9.14838895!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e1!3m2!1sen!2sng!4v1772622889280!5m2!1sen!2sng"
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title="Takehealth Location"
+        />
       </section>
     </Layout>
   );

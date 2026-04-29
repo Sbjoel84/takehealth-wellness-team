@@ -10,7 +10,6 @@ import {
   Trash2,
   FileText,
   Phone,
-  Mail,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -19,13 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -42,41 +34,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { clientsApi } from "@/lib/api-client";
+import { patientsApi } from "@/lib/api-client";
 
-// Client type
 interface Client {
   id: string;
   fullName: string;
-  email: string;
   phone: string;
-  serviceType: string;
-  status: "ACTIVE" | "INACTIVE" | "CANCELLED" | "COMPLETED";
+  gender: string;
+  maritalStatus: string;
   createdAt: string;
-  lastVisit?: string;
 }
 
-const serviceTypeLabels: Record<string, string> = {
-  COUNSELLING: "Counselling",
-  DENTAL: "Dental Care",
-  ELITE_SPORT: "Elite Sport",
-  FITNESS: "Fitness Test",
-  REHAB: "Rehabilitative Care",
-  SPA: "Spa & Massage",
-  GENERAL: "General",
-};
-
-const statusColors: Record<string, string> = {
-  ACTIVE: "bg-green-100 text-green-800",
-  INACTIVE: "bg-gray-100 text-gray-800",
-  CANCELLED: "bg-red-100 text-red-800",
-  COMPLETED: "bg-blue-100 text-blue-800",
+const genderLabels: Record<string, string> = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+  NOT_SPECIFIED: "—",
 };
 
 const ClientList = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [serviceFilter, setServiceFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,39 +61,30 @@ const ClientList = () => {
   const [total, setTotal] = useState(0);
   const itemsPerPage = 10;
 
-  // Fetch clients from API
   useEffect(() => {
     const fetchClients = async () => {
       setLoading(true);
       try {
-        const response = await clientsApi.getAll({
+        const response = await patientsApi.getAll({
           page: currentPage,
           limit: itemsPerPage,
-          search: searchQuery,
-          serviceType: serviceFilter !== "all" ? serviceFilter : undefined,
-          status: statusFilter !== "all" ? statusFilter : undefined,
+          search: searchQuery || undefined,
         });
-        
-        // Transform API data to match Client interface
-        const transformedClients = Array.isArray(response.data) 
-          ? response.data.map((client: Record<string, unknown>) => ({
-              id: client.id,
-              fullName: client.fullName || `${client.firstName || ''} ${client.lastName || ''}`.trim(),
-              email: client.email,
-              phone: client.phone || "",
-              serviceType: client.serviceType,
-              status: client.status || "ACTIVE",
-              createdAt: client.createdAt ? new Date(client.createdAt).toISOString().split('T')[0] : "",
-              lastVisit: client.lastVisit ? new Date(client.lastVisit).toISOString().split('T')[0] : undefined,
-            }))
-          : [];
-        
-        setClients(transformedClients);
-        setTotal(response.meta?.total || transformedClients.length);
+
+        const transformed: Client[] = (response.data || []).map((p) => ({
+          id: p.id,
+          fullName: `${p.firstName} ${p.lastName}`.trim(),
+          phone: p.phone || "—",
+          gender: p.gender || "NOT_SPECIFIED",
+          maritalStatus: p.maritalStatus || "NOT_SPECIFIED",
+          createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
+        }));
+
+        setClients(transformed);
+        setTotal(response.meta?.total || transformed.length);
         setTotalPages(response.meta?.totalPages || 1);
       } catch (error) {
-        console.error("Failed to fetch clients:", error);
-        // Fallback to mock data on error
+        console.error("Failed to fetch patients:", error);
         setClients([]);
       } finally {
         setLoading(false);
@@ -124,7 +92,7 @@ const ClientList = () => {
     };
 
     fetchClients();
-  }, [currentPage, searchQuery, serviceFilter, statusFilter]);
+  }, [currentPage, searchQuery]);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -160,42 +128,9 @@ const ClientList = () => {
                 }}
               />
             </div>
-            <div className="flex gap-2">
-              <Select value={serviceFilter} onValueChange={(value) => {
-                setServiceFilter(value);
-                setCurrentPage(1);
-              }}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Service Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
-                  <SelectItem value="COUNSELLING">Counselling</SelectItem>
-                  <SelectItem value="DENTAL">Dental Care</SelectItem>
-                  <SelectItem value="FITNESS">Fitness Test</SelectItem>
-                  <SelectItem value="REHAB">Rehabilitative Care</SelectItem>
-                  <SelectItem value="SPA">Spa & Massage</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={(value) => {
-                setStatusFilter(value);
-                setCurrentPage(1);
-              }}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="icon">
-                <Filter className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button variant="outline" size="icon" title="Filter">
+              <Filter className="w-4 h-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -221,11 +156,10 @@ const ClientList = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Service Type</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Patient</TableHead>
+                    <TableHead>Gender</TableHead>
+                    <TableHead>Marital Status</TableHead>
                     <TableHead>Registered</TableHead>
-                    <TableHead>Last Visit</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -246,35 +180,16 @@ const ClientList = () => {
                           </Avatar>
                           <div>
                             <p className="font-medium">{client.fullName}</p>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Mail className="w-3 h-3" />
-                                {client.email}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {client.phone}
-                              </span>
-                            </div>
+                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Phone className="w-3 h-3" />
+                              {client.phone}
+                            </span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          {serviceTypeLabels[client.serviceType] || client.serviceType}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            statusColors[client.status]
-                          }`}
-                        >
-                          {client.status.charAt(0) + client.status.slice(1).toLowerCase()}
-                        </span>
-                      </TableCell>
+                      <TableCell>{genderLabels[client.gender] || client.gender}</TableCell>
+                      <TableCell className="capitalize">{client.maritalStatus.toLowerCase().replace("_", " ")}</TableCell>
                       <TableCell>{client.createdAt}</TableCell>
-                      <TableCell>{client.lastVisit || "-"}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

@@ -561,6 +561,74 @@ const servicesData: ServiceData[] = [
         ctaLink: "/admin/add-client?service=health360&plan=elite"
       }
     ]
+  },
+  {
+    id: "corporate",
+    title: "Corporate / Enterprise Plan",
+    shortDescription: "Comprehensive Wellness Solutions for Your Organization",
+    fullDescription: "Takehealth Corporate/Enterprise Plan provides tailored wellness programs for organizations. We help businesses invest in their most valuable asset - their people. Our corporate solutions include fitness facilities, health screenings, nutrition workshops, mental wellness programs, and dedicated support staff.",
+    image: gymImage,
+    features: ["Dedicated Account Manager", "Customized Wellness Programs", "Regular Health Assessments", "Staff Training Sessions", "On-site Facilities", "24/7 Support"],
+    plans: [
+      {
+        id: "corp-starter",
+        name: "CORPORATE STARTER (20 STAFF)",
+        price: "₦500,000",
+        period: "/ Month",
+        description: "Perfect for small teams starting their wellness journey. Ideal for organizations with 20 employees.",
+        tier: "basic",
+        features: [
+          "Wellness program for 20 staff members",
+          "Weekly fitness sessions (group)",
+          "Monthly health screenings",
+          "Nutrition workshops (quarterly)",
+          "Mental wellness awareness",
+          "Dedicated account manager",
+          "Monthly progress reports"
+        ],
+        ctaLink: "/admin/add-client?service=corporate&plan=starter"
+      },
+      {
+        id: "corp-growth",
+        name: "CORPORATE GROWTH (50 STAFF)",
+        price: "₦1,200,000",
+        period: "/ Month",
+        description: "Expanded wellness solution for growing companies. Perfect for organizations with up to 50 employees.",
+        tier: "premium",
+        features: [
+          "Wellness program for 50 staff members",
+          "On-site gym access",
+          "Monthly individual health assessments",
+          "Monthly nutrition workshops",
+          "Mental wellness program (group sessions)",
+          "Stress management workshops",
+          "Bi-weekly progress reviews",
+          "Priority booking for services"
+        ],
+        ctaLink: "/admin/add-client?service=corporate&plan=growth"
+      },
+      {
+        id: "corp-enterprise",
+        name: "ENTERPRISE (100+ STAFF)",
+        price: "₦2,000,000",
+        period: "/ Month",
+        description: "Full enterprise wellness solution for large organizations. Comprehensive coverage for 100+ employees.",
+        tier: "elite",
+        features: [
+          "Wellness program for 100+ staff members",
+          "Dedicated on-site fitness facilities",
+          "Full-time wellness coordinator",
+          "Comprehensive health assessments (monthly)",
+          "Personalized nutrition plans",
+          "Full mental wellness program",
+          "24/7 priority support",
+          "Customized corporate wellness events",
+          "Quarterly executive health summaries",
+          "Family add-on packages available"
+        ],
+        ctaLink: "/admin/add-client?service=corporate&plan=enterprise"
+      }
+    ]
   }
 ];
 

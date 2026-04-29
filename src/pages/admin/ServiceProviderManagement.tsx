@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ComingSoon } from "@/components/ui/ComingSoon";
 import {
   Plus,
   Search,
@@ -294,7 +295,11 @@ const ServiceProviderManagement = () => {
   };
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="relative p-6 lg:p-8 space-y-6">
+      <ComingSoon
+        title="Service Provider Management"
+        description="This module is under development. Provider profiles, assignments, and scheduling will be available once the backend API is ready."
+      />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

@@ -1,398 +1,294 @@
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://take-health-web-api.onrender.com';
 
-// Create axios instance
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
+  withCredentials: true,
 });
 
-// Request interceptor - Add auth token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = 'Bearer ' + token;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle errors and token refresh
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          });
-
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
-          localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("refreshToken", newRefreshToken);
-
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return apiClient(originalRequest);
-        }
-      } catch (refreshError) {
-        // Refresh failed - clear tokens and redirect to login
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      }
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
     }
-
     return Promise.reject(error);
   }
 );
 
-// API Response Types
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-// Dashboard API Types
-export interface DashboardStats {
-  clients: {
-    total: number;
-    pending: number;
-  };
-  appointments: {
-    total: number;
-    pending: number;
-    completed: number;
-  };
-  intakeForms: {
-    total: number;
-    pending: number;
-  };
-}
-
-export interface Client {
+export interface ApiUser {
   id: string;
-  fullName: string;
+  name: string;
   email: string;
-  phone?: string;
-  status: string;
-  dateOfBirth?: string;
-  address?: string;
+  image?: string | null;
+  emailVerified: boolean;
   createdAt: string;
-  serviceType?: string;
+  updatedAt: string;
+}
+
+export interface Patient {
+  id: string;
+  userId?: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | 'NOT_SPECIFIED';
+  maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'NOT_SPECIFIED';
+  phone?: string;
+  bloodType?: string;
+  allergies: string[];
+  medicalHistory?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Appointment {
   id: string;
-  clientId: string;
-  clientName: string;
-  clientEmail: string;
-  appointmentDate: string;
-  startTime: string;
-  serviceType: string;
-  status: string;
+  reference: string;
+  userId?: string;
+  patientId: string;
+  providerId: string;
+  serviceId: string;
+  scheduledAt: string;
+  type: 'IN_PERSON' | 'VIRTUAL' | 'HOME_VISIT';
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW' | 'RESCHEDULED';
   notes?: string;
+  duration?: number;
+  createdAt: string;
+  updatedAt: string;
+  patient?: { firstName: string; lastName: string; phone?: string };
+  provider?: { name: string };
+  service?: { name: string };
+}
+
+export interface Provider {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  type: string;
+  specialty?: string;
+  location?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
   createdAt: string;
 }
 
-// Auth API
+export interface DashboardOverview {
+  generatedAt: string;
+  overview: {
+    window: { from: string; to: string };
+    users: { total: number; active: number; new: number; newDelta: number };
+    patients: { total: number; new: number; newDelta: number };
+    providers: { total: number; active: number; pendingVerification: number };
+    appointments: {
+      total: number; new: number; newDelta: number;
+      confirmed: number; completed: number; completedDelta: number;
+      cancelled: number; pending: number; noShow: number;
+      completionRate: number; cancellationRate: number; noShowRate: number;
+    };
+  };
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
 export const authApi = {
-  login: async (email: string, password: string) => {
-    const response = await apiClient.post("/auth/login/admin", { email, password });
-    return response.data;
+  signUp: async (data: { name: string; email: string; password: string }) => {
+    const res = await apiClient.post<{ token: string | null; user: ApiUser }>(
+      '/auth/sign-up/email', { ...data, rememberMe: true }
+    );
+    return res.data;
   },
 
-  loginUser: async (email: string, password: string) => {
-    const response = await apiClient.post("/auth/login/user", { email, password });
-    return response.data;
+  signIn: async (data: { email: string; password: string }) => {
+    const res = await apiClient.post<{ token: string | null; user: ApiUser }>(
+      '/auth/sign-in/email', { ...data, rememberMe: true }
+    );
+    return res.data;
   },
 
-  logout: async () => {
-    const response = await apiClient.post("/auth/logout");
-    return response.data;
-  },
-
-  refresh: async (refreshToken: string) => {
-    const response = await apiClient.post("/auth/refresh", { refreshToken });
-    return response.data;
+  getSession: async () => {
+    const res = await apiClient.get<{ user: ApiUser; session: unknown }>('/auth/get-session');
+    return res.data;
   },
 
   getProfile: async () => {
-    const response = await apiClient.get("/auth/profile");
-    return response.data;
+    const res = await apiClient.get<{ user: ApiUser; session: unknown }>('/auth/get-session');
+    return res.data;
+  },
+
+  signOut: async () => {
+    await apiClient.post('/auth/sign-out');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 };
 
-// Admin Dashboard API
-export const adminApi = {
-  // Dashboard stats
-  getDashboardStats: async (): Promise<DashboardStats> => {
-    const response = await apiClient.get("/admin/dashboard");
-    return response.data;
-  },
+// ─── Patients ─────────────────────────────────────────────────────────────────
 
-  // Clients management
-  getAllClients: async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    serviceType?: string;
-    search?: string;
+export const patientsApi = {
+  create: async (data: {
+    firstName: string; lastName: string; dateOfBirth?: string;
+    gender?: string; maritalStatus?: string; phone?: string;
+    bloodType?: string; allergies?: string[]; medicalHistory?: string;
+    emergencyContactName?: string; emergencyContactPhone?: string;
   }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.status) queryParams.append("status", params.status);
-    if (params?.serviceType) queryParams.append("serviceType", params.serviceType);
-    if (params?.search) queryParams.append("search", params.search);
-
-    const response = await apiClient.get(`/admin/clients?${queryParams.toString()}`);
-    return response.data;
+    const res = await apiClient.post<Patient>('/api/patients', data);
+    return res.data;
   },
 
-  getPendingClients: async (params?: {
-    page?: number;
-    limit?: number;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-
-    const response = await apiClient.get(`/admin/clients/pending?${queryParams.toString()}`);
-    return response.data;
-  },
-
-  getClientById: async (id: string) => {
-    const response = await apiClient.get(`/admin/clients/${id}`);
-    return response.data;
-  },
-
-  approveClient: async (id: string, notes?: string) => {
-    const response = await apiClient.post(`/admin/clients/${id}/approve`, { notes });
-    return response.data;
-  },
-
-  rejectClient: async (id: string, reason?: string) => {
-    const response = await apiClient.post(`/admin/clients/${id}/reject`, { reason });
-    return response.data;
-  },
-
-  deleteClient: async (id: string) => {
-    const response = await apiClient.delete(`/admin/clients/${id}`);
-    return response.data;
-  },
-
-  // Appointments management
-  getAllAppointments: async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    serviceType?: string;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.status) queryParams.append("status", params.status);
-    if (params?.serviceType) queryParams.append("serviceType", params.serviceType);
-
-    const response = await apiClient.get(`/admin/appointments?${queryParams.toString()}`);
-    return response.data;
-  },
-
-  updateAppointmentStatus: async (id: string, status: string, reason?: string) => {
-    const response = await apiClient.put(`/admin/appointments/${id}/status`, { status, reason });
-    return response.data;
-  },
-
-  confirmAppointment: async (id: string) => {
-    const response = await apiClient.post(`/admin/appointments/${id}/confirm`);
-    return response.data;
-  },
-
-  cancelAppointment: async (id: string, reason?: string) => {
-    const response = await apiClient.post(`/admin/appointments/${id}/cancel`, { reason });
-    return response.data;
-  },
-
-  rescheduleAppointment: async (id: string, newDate: string, newTime: string, reason?: string) => {
-    const response = await apiClient.post(`/admin/appointments/${id}/reschedule`, {
-      newDate,
-      newTime,
-      reason,
-    });
-    return response.data;
-  },
-
-  // Admin notes
-  addAdminNote: async (clientId: string, note: string, isPrivate?: boolean) => {
-    const response = await apiClient.post(`/admin/clients/${clientId}/notes`, { note, isPrivate });
-    return response.data;
-  },
-
-  getAdminNotes: async (clientId: string) => {
-    const response = await apiClient.get(`/admin/clients/${clientId}/notes`);
-    return response.data;
-  },
-
-  // Audit logs
-  getAuditLogs: async (limit?: number) => {
-    const response = await apiClient.get(`/admin/audit-logs?limit=${limit || 50}`);
-    return response.data;
-  },
-
-  // Intake forms
-  getIntakeForms: async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    formType?: string;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.status) queryParams.append("status", params.status);
-    if (params?.formType) queryParams.append("formType", params.formType);
-
-    const response = await apiClient.get(`/admin/intake-forms?${queryParams.toString()}`);
-    return response.data;
-  },
-
-  reviewIntakeForm: async (id: string, status: string, notes?: string) => {
-    const response = await apiClient.post(`/admin/intake-forms/${id}/review`, { status, notes });
-    return response.data;
-  },
-};
-
-// Clients API (Public + Protected)
-export const clientsApi = {
-  // Public registration
-  register: async (data: {
-    fullName: string;
-    email: string;
-    password: string;
-    phone?: string;
-    serviceType?: string;
-    dateOfBirth?: string;
-    gender?: string;
-    address?: string;
-  }) => {
-    const response = await apiClient.post("/clients/register", data);
-    return response.data;
-  },
-
-  // Protected endpoints
-  getAll: async (params?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    serviceType?: string;
-    status?: string;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.search) queryParams.append("search", params.search);
-    if (params?.serviceType) queryParams.append("serviceType", params.serviceType);
-    if (params?.status) queryParams.append("status", params.status);
-
-    const response = await apiClient.get(`/clients?${queryParams.toString()}`);
-    return response.data;
+  getAll: async (params?: { page?: number; limit?: number; search?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    const res = await apiClient.get<PaginatedResponse<Patient>>(`/api/patients?${q}`);
+    return res.data;
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/clients/${id}`);
-    return response.data;
-  },
-
-  // Intake forms
-  getIntakeForms: async (params?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    status?: string;
-    formType?: string;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.search) queryParams.append("search", params.search);
-    if (params?.status) queryParams.append("status", params.status);
-    if (params?.formType) queryParams.append("formType", params.formType);
-
-    const response = await apiClient.get(`/clients/intake?${queryParams.toString()}`);
-    return response.data;
-  },
-
-  submitIntakeForm: async (data: {
-    clientId?: string;
-    email?: string;
-    formType: string;
-    formData: Record<string, unknown>;
-  }) => {
-    const response = await apiClient.post("/clients/intake/submit", data);
-    return response.data;
+    const res = await apiClient.get<Patient>(`/api/patients/${id}`);
+    return res.data;
   },
 };
 
-// Appointments API
+// ─── Appointments ─────────────────────────────────────────────────────────────
+
 export const appointmentsApi = {
   getAll: async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    serviceType?: string;
+    page?: number; limit?: number; status?: string;
+    type?: string; from?: string; to?: string;
   }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.status) queryParams.append("status", params.status);
-    if (params?.serviceType) queryParams.append("serviceType", params.serviceType);
-
-    const response = await apiClient.get(`/appointments?${queryParams.toString()}`);
-    return response.data;
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.status) q.set('status', params.status);
+    if (params?.type) q.set('type', params.type);
+    if (params?.from) q.set('from', params.from);
+    if (params?.to) q.set('to', params.to);
+    const res = await apiClient.get<PaginatedResponse<Appointment>>(`/api/appointments?${q}`);
+    return res.data;
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/appointments/${id}`);
-    return response.data;
+    const res = await apiClient.get<Appointment>(`/api/appointments/${id}`);
+    return res.data;
   },
 
   create: async (data: {
-    client_id: string;
-    appointment_date: string;
-    start_time: string;
-    service_type: string;
-    notes?: string;
+    patientId: string; providerId: string; serviceId: string;
+    scheduledAt: string; type: 'IN_PERSON' | 'VIRTUAL' | 'HOME_VISIT';
+    notes?: string; duration?: number;
   }) => {
-    const response = await apiClient.post("/appointments", data);
-    return response.data;
+    const res = await apiClient.post<Appointment>('/api/appointments', data);
+    return res.data;
+  },
+
+  confirm: async (id: string) => {
+    const res = await apiClient.patch<Appointment>(`/api/appointments/${id}/confirm`);
+    return res.data;
+  },
+
+  cancel: async (id: string, reason?: string) => {
+    const res = await apiClient.patch<Appointment>(`/api/appointments/${id}/cancel`, { reason });
+    return res.data;
+  },
+
+  reschedule: async (id: string, scheduledAt: string, reason?: string) => {
+    const res = await apiClient.patch<Appointment>(`/api/appointments/${id}/reschedule`, { scheduledAt, reason });
+    return res.data;
+  },
+
+  complete: async (id: string) => {
+    const res = await apiClient.patch<Appointment>(`/api/appointments/${id}/complete`);
+    return res.data;
+  },
+
+  delete: async (id: string) => {
+    await apiClient.delete(`/api/appointments/${id}`);
+  },
+};
+
+// ─── Providers ────────────────────────────────────────────────────────────────
+
+export const providersApi = {
+  getAll: async (params?: { page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const res = await apiClient.get<PaginatedResponse<Provider>>(`/api/health-service-providers?${q}`);
+    return res.data;
+  },
+
+  getById: async (id: string) => {
+    const res = await apiClient.get<Provider>(`/api/health-service-providers/${id}`);
+    return res.data;
+  },
+};
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+export const dashboardApi = {
+  getOverview: async () => {
+    const res = await apiClient.get<DashboardOverview>('/api/dashboard/overview');
+    return res.data;
+  },
+
+  getUpcomingAppointments: async () => {
+    const res = await apiClient.get<Appointment[]>('/api/dashboard/upcoming-appointments');
+    return res.data;
+  },
+
+  getRecentActivity: async () => {
+    const res = await apiClient.get('/api/dashboard/recent-activity');
+    return res.data;
+  },
+};
+
+// ─── Messaging ────────────────────────────────────────────────────────────────
+
+export const messagingApi = {
+  getConversations: async () => {
+    const res = await apiClient.get('/api/messaging/conversations');
+    return res.data;
+  },
+
+  sendMessage: async (conversationId: string, content: string) => {
+    const res = await apiClient.post(`/api/messaging/conversations/${conversationId}/messages`, { content });
+    return res.data;
+  },
+
+  getMessages: async (conversationId: string, cursor?: string) => {
+    const q = cursor ? `?cursor=${cursor}` : '';
+    const res = await apiClient.get(`/api/messaging/conversations/${conversationId}/messages${q}`);
+    return res.data;
+  },
+
+  getUnread: async () => {
+    const res = await apiClient.get('/api/messaging/unread');
+    return res.data;
   },
 };
 

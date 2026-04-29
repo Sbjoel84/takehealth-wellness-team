@@ -87,6 +87,14 @@ const servicesData: Record<string, { title: string; plans: Array<{ id: string; n
       { id: "h360-elite", name: "HEALTH360+ ELITE", price: "₦795,000", period: "/ Month", description: "Complete wellness + VIP access + concierge" },
     ],
   },
+  corporate: {
+    title: "Corporate / Enterprise Plan",
+    plans: [
+      { id: "corp-starter", name: "CORPORATE STARTER (20 STAFF)", price: "₦500,000", period: "/ Month", description: "Wellness program for 20 staff members - fitness sessions, health screenings, nutrition workshops" },
+      { id: "corp-growth", name: "CORPORATE GROWTH (50 STAFF)", price: "₦1,200,000", period: "/ Month", description: "Expanded wellness for 50 staff - on-site gym, monthly health assessments, mental wellness" },
+      { id: "corp-enterprise", name: "ENTERPRISE (100+ STAFF)", price: "₦2,000,000", period: "/ Month", description: "Full enterprise wellness - dedicated facilities, 24/7 support, customized programs" },
+    ],
+  },
 };
 
 const GetStarted = () => {
@@ -138,71 +146,22 @@ const GetStarted = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${API_URL}/api/v1/clients/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          serviceType: selectedService.toUpperCase(),
-          dateOfBirth: formData.dob,
-          gender: formData.gender,
-          address: formData.address,
-          emergencyContact: formData.emergencyContact,
-          medicalHistory: {
-            preferredDays: formData.preferredDays,
-            preferredTime: formData.preferredTime,
-            selectedPlan: selectedPlan,
-          },
-        }),
-      });
-
-      const data = await response.json();
-      setIsSubmitting(false);
-
-      if (response.ok) {
-        toast({
-          title: "Registration Successful!",
-          description: "Thank you for choosing takehealth. We will contact you soon.",
-          className: "bg-green-500 text-white",
-        });
-        // Reset form after successful submission
-        setFormData({
-          fullName: "",
-          email: "",
-          phone: "",
-          dob: "",
-          gender: "",
-          address: "",
-          emergencyContact: "",
-          preferredDays: "",
-          preferredTime: "",
-        });
-        setSelectedService("");
-        setSelectedPlan("");
-        setCurrentStep(1);
-      } else {
-        toast({
-          title: "Registration Failed",
-          description: data.message || "An error occurred. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      setIsSubmitting(false);
-      console.error("Registration error:", error);
-      toast({
-        title: "Connection Error",
-        description: "Could not connect to the server. Please make sure the backend is running.",
-        variant: "destructive",
-      });
+    if (!formData.fullName || !formData.email || !formData.phone) {
+      toast({ title: "Please fill in your name, email and phone number", variant: "destructive" });
+      return;
     }
+    setIsSubmitting(true);
+    // GetStarted collects plan/service interest but no password.
+    // Hand off to /register with pre-filled query params so the user
+    // can complete their account creation there.
+    navigate(
+      `/register?service=${encodeURIComponent(selectedService)}` +
+        `&plan=${encodeURIComponent(selectedPlan)}` +
+        `&name=${encodeURIComponent(formData.fullName)}` +
+        `&email=${encodeURIComponent(formData.email)}` +
+        `&phone=${encodeURIComponent(formData.phone)}`
+    );
+    setIsSubmitting(false);
   };
 
   const selectedServiceData = selectedService ? servicesData[selectedService] : null;
@@ -279,6 +238,7 @@ const GetStarted = () => {
                           <SelectItem value="nutrition">Nutritional Care</SelectItem>
                           <SelectItem value="counselling">Counselling</SelectItem>
                           <SelectItem value="health360">Health360+ Integrated Programme</SelectItem>
+                          <SelectItem value="corporate">Corporate / Enterprise Plan</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

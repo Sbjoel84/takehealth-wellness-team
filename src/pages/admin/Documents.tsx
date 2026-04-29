@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { ComingSoon } from "@/components/ui/ComingSoon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -96,7 +97,11 @@ const DocumentsPage = () => {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="relative min-h-screen bg-gray-50 p-6">
+        <ComingSoon
+          title="Document Management"
+          description="Secure document storage and management is under development. This will be available once the file storage API is ready."
+        />
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">

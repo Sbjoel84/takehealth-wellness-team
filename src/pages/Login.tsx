@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,29 +32,29 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await authApi.login(formData.email, formData.password);
+      const response = await authApi.signIn({
+        email: formData.email,
+        password: formData.password,
+      });
 
-      // Store tokens
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+      }
       localStorage.setItem("user", JSON.stringify(response.user));
+
+      const displayName = response.user.name?.split(" ")[0] || "Admin";
 
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${response.user.firstName}!`,
+        description: `Welcome back, ${displayName}!`,
       });
 
-      // Redirect based on role
-      if (response.user.role === "ADMIN" || response.user.role === "SUPER_ADMIN") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/admin");
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
       toast({
         title: "Login Failed",
-        description: axiosError.response?.data?.message || "Invalid credentials",
+        description: axiosError.response?.data?.message || "Invalid email or password",
         variant: "destructive",
       });
     } finally {

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, User, Mail, Phone, MapPin, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, Save, User, Phone, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import "@/components/ui/label";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -14,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { patientsApi } from "@/lib/api-client";
+import { useToast } from "@/hooks/use-toast";
 
 const serviceTypes = [
   { value: "COUNSELLING", label: "Counselling" },
@@ -27,6 +28,7 @@ const serviceTypes = [
 
 const AddClient = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -53,12 +55,25 @@ const AddClient = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await patientsApi.create({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone || undefined,
+        dateOfBirth: formData.dateOfBirth || undefined,
+        emergencyContactName: formData.emergencyContact || undefined,
+        emergencyContactPhone: formData.emergencyPhone || undefined,
+      });
+      toast({ title: "Client added successfully" });
       navigate("/admin/clients");
-    }, 1000);
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to add client. Please try again.";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

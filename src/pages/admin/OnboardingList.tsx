@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { clientsApi } from "@/lib/api-client";
+import { ComingSoon } from "@/components/ui/ComingSoon";
 
 interface OnboardingForm {
   id: string;
@@ -56,48 +56,8 @@ const OnboardingList = () => {
   });
 
   useEffect(() => {
-    const fetchOnboardingForms = async () => {
-      setLoading(true);
-      try {
-        const response = await clientsApi.getIntakeForms({
-          page: pagination.page,
-          limit: pagination.limit,
-          search: filters.search || undefined,
-          status: filters.status || undefined,
-          formType: filters.formType || undefined,
-        });
-
-        // Transform API data
-        const transformedForms = Array.isArray(response.data)
-          ? response.data.map((form: Record<string, unknown>) => ({
-              id: form.id as string,
-              assessmentId: (form.assessmentId as string) || `TH-IF-${(form.id as string)?.padStart(3, '0') || '000'}`,
-              client: {
-                fullName: (form.fullName as string) || `${form.firstName || ''} ${form.lastName || ''}`.trim() || "Unknown",
-                email: (form.email as string) || "",
-              },
-              formType: (form.serviceType as string) || (form.formType as string) || "GENERAL",
-              status: (form.status as string) || "PENDING",
-              createdAt: (form.createdAt as string) || new Date().toISOString(),
-              formData: (form.formData as Record<string, unknown>) || {},
-            }))
-          : [];
-
-        setOnboardingForms(transformedForms);
-        setPagination((prev) => ({
-          ...prev,
-          total: response.meta?.total || transformedForms.length,
-          totalPages: response.meta?.totalPages || 1,
-        }));
-      } catch (error) {
-        console.error("Failed to fetch onboarding forms:", error);
-        setOnboardingForms([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOnboardingForms();
+    setLoading(false);
+    setOnboardingForms([]);
   }, [pagination.page, filters]);
 
   const handleViewForm = (form: OnboardingForm) => {
@@ -107,22 +67,12 @@ const OnboardingList = () => {
     setIsDialogOpen(true);
   };
 
-  const handleReviewForm = async () => {
+  const handleReviewForm = () => {
     if (selectedForm) {
-      try {
-        await clientsApi.updateIntakeFormStatus(selectedForm.id, reviewStatus, reviewNotes);
-        
-        // Update local state
-        setOnboardingForms((prev) =>
-          prev.map((f) =>
-            f.id === selectedForm.id ? { ...f, status: reviewStatus } : f
-          )
-        );
-        
-        setSelectedForm((prev) => prev ? { ...prev, status: reviewStatus } : null);
-      } catch (error) {
-        console.error("Failed to update form status:", error);
-      }
+      setOnboardingForms((prev) =>
+        prev.map((f) => (f.id === selectedForm.id ? { ...f, status: reviewStatus } : f))
+      );
+      setSelectedForm((prev) => (prev ? { ...prev, status: reviewStatus } : null));
     }
     setIsDialogOpen(false);
   };
@@ -133,7 +83,8 @@ const OnboardingList = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      <ComingSoon title="Onboarding Forms" description="Client onboarding form management is coming soon." />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Onboarding Forms</h1>
