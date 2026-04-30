@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -46,7 +47,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { appointmentsApi, Appointment as ApiAppointment } from "@/lib/api-client";
+import { appointmentService } from "../../services/appointmentService";
+import { Appointment as ApiAppointment } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Appointment {
@@ -108,6 +110,7 @@ function transformAppointment(raw: ApiAppointment): Appointment {
 
 const AppointmentList = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [serviceFilter, setServiceFilter] = useState("all");
@@ -130,7 +133,7 @@ const AppointmentList = () => {
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await appointmentsApi.getAll({
+      const response = await appointmentService.getAppointments({
         page: currentPage,
         limit: itemsPerPage,
         status: statusFilter !== "all" ? statusFilter : undefined,
@@ -150,8 +153,7 @@ const AppointmentList = () => {
       setAppointments(filtered);
       setTotal(response.meta?.total ?? filtered.length);
       setTotalPages(response.meta?.totalPages ?? 1);
-    } catch (error) {
-      console.error("Failed to fetch appointments:", error);
+    } catch {
       toast({ title: "Error", description: "Failed to load appointments", variant: "destructive" });
       setAppointments([]);
     } finally {
@@ -166,7 +168,7 @@ const AppointmentList = () => {
   const handleApprove = async (apt: Appointment) => {
     setActionLoading(apt.id);
     try {
-      await appointmentsApi.confirm(apt.id);
+      await appointmentService.confirmAppointment(apt.id);
       setAppointments((prev) => prev.map((a) => (a.id === apt.id ? { ...a, status: "CONFIRMED" } : a)));
       toast({ title: "Appointment confirmed" });
     } catch {
@@ -179,7 +181,7 @@ const AppointmentList = () => {
   const handleReject = async (apt: Appointment) => {
     setActionLoading(apt.id);
     try {
-      await appointmentsApi.cancel(apt.id);
+      await appointmentService.cancelAppointment(apt.id);
       setAppointments((prev) => prev.map((a) => (a.id === apt.id ? { ...a, status: "CANCELLED" } : a)));
       toast({ title: "Appointment cancelled" });
     } catch {
@@ -192,7 +194,7 @@ const AppointmentList = () => {
   const handleComplete = async (apt: Appointment) => {
     setActionLoading(apt.id);
     try {
-      await appointmentsApi.complete(apt.id);
+      await appointmentService.completeAppointment(apt.id);
       setAppointments((prev) => prev.map((a) => (a.id === apt.id ? { ...a, status: "COMPLETED" } : a)));
       toast({ title: "Appointment marked complete" });
     } catch {
@@ -207,7 +209,7 @@ const AppointmentList = () => {
     setActionLoading(selectedAppointment.id);
     try {
       const scheduledAt = `${rescheduleForm.date}T${rescheduleForm.time}:00`;
-      await appointmentsApi.reschedule(selectedAppointment.id, scheduledAt, rescheduleForm.reason);
+      await appointmentService.rescheduleAppointment(selectedAppointment.id, scheduledAt, rescheduleForm.reason);
       setAppointments((prev) =>
         prev.map((a) =>
           a.id === selectedAppointment.id
@@ -228,7 +230,7 @@ const AppointmentList = () => {
     if (!selectedAppointment) return;
     setActionLoading(selectedAppointment.id);
     try {
-      await appointmentsApi.cancel(selectedAppointment.id, "Deleted by admin");
+      await appointmentService.cancelAppointment(selectedAppointment.id, "Deleted by admin");
       setAppointments((prev) => prev.filter((a) => a.id !== selectedAppointment.id));
       setTotal((t) => t - 1);
       toast({ title: "Appointment removed" });
@@ -257,7 +259,7 @@ const AppointmentList = () => {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button>
+          <Button onClick={() => navigate("/admin/appointments/new")}>
             <Plus className="w-4 h-4 mr-2" />
             Schedule New
           </Button>

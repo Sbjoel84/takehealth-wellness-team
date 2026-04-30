@@ -1,11 +1,13 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://take-health-web-api.onrender.com';
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? '' : 'https://take-health-web-api.onrender.com');
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000,
+  timeout: 60000,
   withCredentials: true,
 });
 
@@ -198,7 +200,7 @@ export const appointmentsApi = {
   },
 
   create: async (data: {
-    patientId: string; providerId: string; serviceId: string;
+    patientId: string; providerId: string; serviceId?: string;
     scheduledAt: string; type: 'IN_PERSON' | 'VIRTUAL' | 'HOME_VISIT';
     notes?: string; duration?: number;
   }) => {

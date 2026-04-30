@@ -60,7 +60,7 @@ const servicesData: ServiceData[] = [
           "Clean, safe, and supportive workout environment",
           "Access to member-only fitness tips and updates"
         ],
-        ctaLink: "/admin/add-client?service=gym&plan=basic"
+        ctaLink: "/register?service=gym&plan=basic"
       },
       {
         id: "gym-premium",
@@ -76,7 +76,7 @@ const servicesData: ServiceData[] = [
           "Monthly progress check-ins",
           "Basic fitness assessment"
         ],
-        ctaLink: "/admin/add-client?service=gym&plan=premium"
+        ctaLink: "/register?service=gym&plan=premium"
       },
       {
         id: "gym-elite",
@@ -93,7 +93,7 @@ const servicesData: ServiceData[] = [
           "Priority booking and trainer support",
           "Integrated wellness referrals"
         ],
-        ctaLink: "/admin/add-client?service=gym&plan=elite"
+        ctaLink: "/register?service=gym&plan=elite"
       }
     ]
   },
@@ -117,7 +117,7 @@ const servicesData: ServiceData[] = [
           "10% discount on additional spa services",
           "Complimentary wellness consultation (quarterly)"
         ],
-        ctaLink: "/admin/add-client?service=spa&plan=basic"
+        ctaLink: "/register?service=spa&plan=basic"
       },
       {
         id: "spa-premium",
@@ -133,7 +133,7 @@ const servicesData: ServiceData[] = [
           "15% discount on all spa services",
           "Complimentary wellness consultation (monthly)"
         ],
-        ctaLink: "/admin/add-client?service=spa&plan=premium"
+        ctaLink: "/register?service=spa&plan=premium"
       },
       {
         id: "spa-elite",
@@ -151,7 +151,7 @@ const servicesData: ServiceData[] = [
           "20% discount on all spa services",
           "Dedicated wellness advisor"
         ],
-        ctaLink: "/admin/add-client?service=spa&plan=elite"
+        ctaLink: "/register?service=spa&plan=elite"
       }
     ]
   },
@@ -176,7 +176,7 @@ const servicesData: ServiceData[] = [
           "Personalised home-care routine guidance",
           "Member-only treatment discounts"
         ],
-        ctaLink: "/admin/add-client?service=skincare&plan=basic"
+        ctaLink: "/register?service=skincare&plan=basic"
       },
       {
         id: "skincare-premium",
@@ -192,7 +192,7 @@ const servicesData: ServiceData[] = [
           "Lifestyle and skincare coaching",
           "Priority booking and exclusive discounts"
         ],
-        ctaLink: "/admin/add-client?service=skincare&plan=premium"
+        ctaLink: "/register?service=skincare&plan=premium"
       },
       {
         id: "skincare-elite",
@@ -208,7 +208,7 @@ const servicesData: ServiceData[] = [
           "Full lifestyle, nutrition, and skin health integration",
           "VIP priority access and concierge booking"
         ],
-        ctaLink: "/admin/add-client?service=skincare&plan=elite"
+        ctaLink: "/register?service=skincare&plan=elite"
       }
     ]
   },
@@ -233,7 +233,7 @@ const servicesData: ServiceData[] = [
           "Oral Hygiene Instruction",
           "10% Discount on Fillings and X-Rays"
         ],
-        ctaLink: "/admin/add-client?service=dental&plan=basic"
+        ctaLink: "/register?service=dental&plan=basic"
       },
       {
         id: "dental-premium",
@@ -249,7 +249,7 @@ const servicesData: ServiceData[] = [
           "1 Dental X-Ray",
           "15% Discount on Fillings, Whitening and Dentures"
         ],
-        ctaLink: "/admin/add-client?service=dental&plan=premium"
+        ctaLink: "/register?service=dental&plan=premium"
       },
       {
         id: "dental-elite",
@@ -266,7 +266,7 @@ const servicesData: ServiceData[] = [
           "Priority Booking",
           "20% Discount on Crowns, Braces and Veneers"
         ],
-        ctaLink: "/admin/add-client?service=dental&plan=elite"
+        ctaLink: "/register?service=dental&plan=elite"
       }
     ]
   },
@@ -294,7 +294,7 @@ const servicesData: ServiceData[] = [
           "Personalised Training Plan",
           "10% discount on add-ons"
         ],
-        ctaLink: "/admin/add-client?service=elite&plan=basic"
+        ctaLink: "/register?service=elite&plan=basic"
       },
       {
         id: "elite-premium",
@@ -312,7 +312,7 @@ const servicesData: ServiceData[] = [
           "Detailed Training Plan",
           "15% discount on add-ons"
         ],
-        ctaLink: "/admin/add-client?service=elite&plan=premium"
+        ctaLink: "/register?service=elite&plan=premium"
       },
       {
         id: "elite-elite",
@@ -330,7 +330,7 @@ const servicesData: ServiceData[] = [
           "High-performance periodisation plan",
           "20% discount on add-ons"
         ],
-        ctaLink: "/admin/add-client?service=elite&plan=elite"
+        ctaLink: "/register?service=elite&plan=elite"
       }
     ]
   },
@@ -354,7 +354,7 @@ const servicesData: ServiceData[] = [
           "2 rehab sessions per week",
           "Access to group rehab classes"
         ],
-        ctaLink: "/admin/add-client?service=rehab&plan=basic"
+        ctaLink: "/register?service=rehab&plan=basic"
       },
       {
         id: "rehab-premium",
@@ -369,7 +369,7 @@ const servicesData: ServiceData[] = [
           "Progress tracking and weekly review with therapist",
           "Access to rehabilitation resources and home exercise plan"
         ],
-        ctaLink: "/admin/add-client?service=rehab&plan=premium"
+        ctaLink: "/register?service=rehab&plan=premium"
       },
       {
         id: "rehab-elite",
@@ -384,7 +384,7 @@ const servicesData: ServiceData[] = [
           "One-on-one coaching with a senior rehab specialist",
           "Priority booking and ongoing lifestyle support"
         ],
-        ctaLink: "/admin/add-client?service=rehab&plan=elite"
+        ctaLink: "/register?service=rehab&plan=elite"
       }
     ]
   },
@@ -408,7 +408,7 @@ const servicesData: ServiceData[] = [
           "Premium: 2 months gym + 2 nutrition sessions - ₦100,000",
           "Classic: 3 months gym + 3 nutrition sessions - ₦150,000"
         ],
-        ctaLink: "/admin/add-client?service=nutrition&plan=basic"
+        ctaLink: "/register?service=nutrition&plan=basic"
       },
       {
         id: "nutr-premium",
@@ -422,7 +422,7 @@ const servicesData: ServiceData[] = [
           "Premium: 2 months gym + weekly nutrition check-ins - ₦150,000",
           "Classic: 3 months gym + weekly nutrition check-ins - ₦180,000"
         ],
-        ctaLink: "/admin/add-client?service=nutrition&plan=premium"
+        ctaLink: "/register?service=nutrition&plan=premium"
       },
       {
         id: "nutr-elite",
@@ -436,7 +436,7 @@ const servicesData: ServiceData[] = [
           "Premium: 2 months gym + personalised meal plan + weekly check-ins - ₦180,000",
           "Classic: 3 months gym + personalised meal plan + weekly check-ins - ₦200,000"
         ],
-        ctaLink: "/admin/add-client?service=nutrition&plan=elite"
+        ctaLink: "/register?service=nutrition&plan=elite"
       }
     ]
   },
@@ -462,7 +462,7 @@ const servicesData: ServiceData[] = [
           "1x mindfulness mini-session (20-30 mins)",
           "10% discount on extra sessions"
         ],
-        ctaLink: "/admin/add-client?service=counselling&plan=basic"
+        ctaLink: "/register?service=counselling&plan=basic"
       },
       {
         id: "counsel-premium",
@@ -479,7 +479,7 @@ const servicesData: ServiceData[] = [
           "Between-session support (business hours) via check-in messages",
           "15% discount on add-ons"
         ],
-        ctaLink: "/admin/add-client?service=counselling&plan=premium"
+        ctaLink: "/register?service=counselling&plan=premium"
       },
       {
         id: "counsel-elite",
@@ -497,7 +497,7 @@ const servicesData: ServiceData[] = [
           "20% discount on add-ons",
           "Quarterly wellbeing review report"
         ],
-        ctaLink: "/admin/add-client?service=counselling&plan=elite"
+        ctaLink: "/register?service=counselling&plan=elite"
       }
     ]
   },
@@ -524,7 +524,7 @@ const servicesData: ServiceData[] = [
           "Monthly Health360+ review",
           "Community access"
         ],
-        ctaLink: "/admin/add-client?service=health360&plan=basic"
+        ctaLink: "/register?service=health360&plan=basic"
       },
       {
         id: "health-premium",
@@ -541,7 +541,7 @@ const servicesData: ServiceData[] = [
           "Skin (Basic Glow): 1 professional facial/month",
           "Community access"
         ],
-        ctaLink: "/admin/add-client?service=health360&plan=premium"
+        ctaLink: "/register?service=health360&plan=premium"
       },
       {
         id: "health-elite",
@@ -558,7 +558,7 @@ const servicesData: ServiceData[] = [
           "Skin (Elite Luminance): advanced corrective care",
           "Community access"
         ],
-        ctaLink: "/admin/add-client?service=health360&plan=elite"
+        ctaLink: "/register?service=health360&plan=elite"
       }
     ]
   },
@@ -586,7 +586,7 @@ const servicesData: ServiceData[] = [
           "Dedicated account manager",
           "Monthly progress reports"
         ],
-        ctaLink: "/admin/add-client?service=corporate&plan=starter"
+        ctaLink: "/register?service=corporate&plan=starter"
       },
       {
         id: "corp-growth",
@@ -605,7 +605,7 @@ const servicesData: ServiceData[] = [
           "Bi-weekly progress reviews",
           "Priority booking for services"
         ],
-        ctaLink: "/admin/add-client?service=corporate&plan=growth"
+        ctaLink: "/register?service=corporate&plan=growth"
       },
       {
         id: "corp-enterprise",
@@ -626,7 +626,7 @@ const servicesData: ServiceData[] = [
           "Quarterly executive health summaries",
           "Family add-on packages available"
         ],
-        ctaLink: "/admin/add-client?service=corporate&plan=enterprise"
+        ctaLink: "/register?service=corporate&plan=enterprise"
       }
     ]
   }
@@ -699,9 +699,7 @@ function ServiceCard({ service, index }: ServiceCardProps) {
             <ServicesPlanSection 
               title="Membership Plans"
               plans={displayPlans}
-              onPlanSelect={(planId) => {
-                console.log("Selected plan:", planId);
-              }}
+              onPlanSelect={(_planId) => {}}
             />
 
             {service.plans.length > 3 && (

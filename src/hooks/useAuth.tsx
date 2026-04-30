@@ -23,10 +23,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored auth data on mount
+    // Restore session from localStorage on mount.
+    // Accept user-only (Better Auth cookie mode returns token: null).
     const storedAuth = authService.getStoredAuth();
-    if (storedAuth.user && storedAuth.token) {
-      setUser(storedAuth.user);
+    if (storedAuth.user) {
+      setUser(storedAuth.user as User);
     }
     setIsLoading(false);
   }, []);
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authService.login(credentials);
       authService.storeAuthData(response);
-      setUser(response.user);
+      setUser((response.user as unknown) as User);
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authService.register(data);
       authService.storeAuthData(response);
-      setUser(response.user);
+      setUser((response.user as unknown) as User);
     } finally {
       setIsLoading(false);
     }

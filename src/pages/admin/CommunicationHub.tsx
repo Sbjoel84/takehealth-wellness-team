@@ -1,22 +1,8 @@
-import { useState } from "react";
-import { ComingSoon } from "@/components/ui/ComingSoon";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Send,
-  Search,
-  Phone,
-  Mail,
-  MessageSquare,
-  User,
-  Clock,
-  CheckCheck,
-  Paperclip,
-  MoreVertical,
-  Stethoscope,
-  Brain,
-  Dumbbell,
-  Sparkles,
-  Salad,
-  Activity,
+  Send, Search, Phone, Mail, MessageSquare, User, Clock, CheckCheck,
+  Paperclip, MoreVertical, Stethoscope, Brain, Dumbbell, Sparkles, Salad, Activity,
+  AlertCircle, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,152 +11,35 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface Message {
-  id: string;
-  senderId: string;
-  senderName: string;
-  recipientId: string;
-  recipientName: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  type: "message" | "announcement" | "alert";
-}
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { messagingService } from "@/services/messagingService";
+import { ApiError } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Conversation {
   id: string;
   participantId: string;
   participantName: string;
   participantRole: string;
-  participantAvatar?: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
   online: boolean;
 }
 
-const mockConversations: Conversation[] = [
-  {
-    id: "1",
-    participantId: "TH-SP-001",
-    participantName: "Dr. Sarah Johnson",
-    participantRole: "Counselling",
-    lastMessage: "I've reviewed John's progress and recommend continuing with weekly sessions.",
-    lastMessageTime: "10:30 AM",
-    unreadCount: 2,
-    online: true,
-  },
-  {
-    id: "2",
-    participantId: "TH-SP-002",
-    participantName: "Dr. Michael Chen",
-    participantRole: "Dental Care",
-    lastMessage: "The dental equipment has been serviced and is ready for use.",
-    lastMessageTime: "09:15 AM",
-    unreadCount: 0,
-    online: true,
-  },
-  {
-    id: "3",
-    participantId: "TH-SP-003",
-    participantName: "Coach James Williams",
-    participantRole: "Fitness & Gym",
-    lastMessage: "Mike Johnson achieved a new personal best today!",
-    lastMessageTime: "Yesterday",
-    unreadCount: 1,
-    online: false,
-  },
-  {
-    id: "4",
-    participantId: "TH-SP-004",
-    participantName: "Dr. Emily Brown",
-    participantRole: "Skin Care",
-    lastMessage: "Skin care products have been restocked.",
-    lastMessageTime: "Yesterday",
-    unreadCount: 0,
-    online: true,
-  },
-  {
-    id: "5",
-    participantId: "TH-SP-005",
-    participantName: "Therapist Robert Taylor",
-    participantRole: "Rehabilitation",
-    lastMessage: "Emily's rehabilitation is progressing well, 80% complete.",
-    lastMessageTime: "2 days ago",
-    unreadCount: 0,
-    online: false,
-  },
-  {
-    id: "6",
-    participantId: "TH-SP-006",
-    participantName: "Dr. Lisa Anderson",
-    participantRole: "Nutrition",
-    lastMessage: "New meal plans are ready for review.",
-    lastMessageTime: "3 days ago",
-    unreadCount: 0,
-    online: true,
-  },
-];
-
-const mockMessages: Message[] = [
-  {
-    id: "m1",
-    senderId: "admin",
-    senderName: "Admin",
-    recipientId: "TH-SP-001",
-    recipientName: "Dr. Sarah Johnson",
-    content: "Good morning Sarah, how are the new clients progressing?",
-    timestamp: "2024-01-15T09:00:00Z",
-    read: true,
-    type: "message",
-  },
-  {
-    id: "m2",
-    senderId: "TH-SP-001",
-    senderName: "Dr. Sarah Johnson",
-    recipientId: "admin",
-    recipientName: "Admin",
-    content: "Good morning! John is doing excellent, he just completed his 6th session and shows significant improvement. Jane is also responding well to treatment.",
-    timestamp: "2024-01-15T09:15:00Z",
-    read: true,
-    type: "message",
-  },
-  {
-    id: "m3",
-    senderId: "admin",
-    senderName: "Admin",
-    recipientId: "TH-SP-001",
-    recipientName: "Dr. Sarah Johnson",
-    content: "That's wonderful to hear! What's the recommendation for their treatment plan?",
-    timestamp: "2024-01-15T09:30:00Z",
-    read: true,
-    type: "message",
-  },
-  {
-    id: "m4",
-    senderId: "TH-SP-001",
-    senderName: "Dr. Sarah Johnson",
-    recipientId: "admin",
-    recipientName: "Admin",
-    content: "I've reviewed John's progress and recommend continuing with weekly sessions. For Jane, I suggest we increase frequency to twice a week for the next month.",
-    timestamp: "2024-01-15T10:30:00Z",
-    read: false,
-    type: "message",
-  },
-];
+interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+  isOwn: boolean;
+}
 
 const roleIcons: Record<string, React.ElementType> = {
   Counselling: Brain,
@@ -181,36 +50,182 @@ const roleIcons: Record<string, React.ElementType> = {
   Nutrition: Salad,
 };
 
-const CommunicationHub = () => {
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(mockConversations[0]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [newMessage, setNewMessage] = useState("");
-  const [filterRole, setFilterRole] = useState("all");
+function normalizeConversations(raw: unknown): Conversation[] {
+  const list: unknown[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as Record<string, unknown>)?.data)
+    ? ((raw as Record<string, unknown>).data as unknown[])
+    : [];
 
-  const filteredConversations = mockConversations.filter((conv) => {
+  return list.map((item) => {
+    const c = item as Record<string, unknown>;
+    const participant =
+      (c.participant as Record<string, unknown>) ||
+      ((c.participants as unknown[])?.[0] as Record<string, unknown>) ||
+      {};
+
+    const lastMsg = c.lastMessage;
+    const lastMsgContent =
+      typeof lastMsg === "string"
+        ? lastMsg
+        : typeof (lastMsg as Record<string, unknown>)?.content === "string"
+        ? ((lastMsg as Record<string, unknown>).content as string)
+        : "";
+
+    const lastMsgTime =
+      (c.lastMessageTime as string) ||
+      (c.updatedAt as string) ||
+      (c.createdAt as string) ||
+      "";
+
+    return {
+      id: String(c.id || ""),
+      participantId: String(participant.id || c.participantId || ""),
+      participantName: String(participant.name || c.name || c.participantName || "Unknown"),
+      participantRole: String(participant.role || c.type || c.participantRole || ""),
+      lastMessage: lastMsgContent,
+      lastMessageTime: lastMsgTime
+        ? new Date(lastMsgTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "",
+      unreadCount: Number(c.unreadCount ?? 0),
+      online: Boolean(c.isOnline ?? c.online ?? false),
+    };
+  });
+}
+
+function normalizeMessages(raw: unknown): Message[] {
+  const list: unknown[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as Record<string, unknown>)?.data)
+    ? ((raw as Record<string, unknown>).data as unknown[])
+    : Array.isArray((raw as Record<string, unknown>)?.messages)
+    ? ((raw as Record<string, unknown>).messages as unknown[])
+    : [];
+
+  return list.map((item) => {
+    const m = item as Record<string, unknown>;
+    const sender = (m.sender as Record<string, unknown>) || {};
+    const senderId = String(m.senderId || sender.id || "");
+    return {
+      id: String(m.id || Math.random()),
+      senderId,
+      senderName: String(sender.name || m.senderName || senderId),
+      content: String(m.content || ""),
+      createdAt: String(m.createdAt || m.timestamp || new Date().toISOString()),
+      isOwn: Boolean(m.isOwn ?? m.isMine ?? false),
+    };
+  });
+}
+
+const CommunicationHub = () => {
+  const { toast } = useToast();
+
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [convsLoading, setConvsLoading] = useState(true);
+  const [convsError, setConvsError] = useState<string | null>(null);
+
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [msgsLoading, setMsgsLoading] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchConversations = useCallback(async () => {
+    setConvsLoading(true);
+    setConvsError(null);
+    try {
+      const res = await messagingService.getConversations();
+      setConversations(normalizeConversations(res));
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Failed to load conversations";
+      setConvsError(msg);
+    } finally {
+      setConvsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+  useEffect(() => {
+    if (!selectedConversation) return;
+    const fetchMessages = async () => {
+      setMsgsLoading(true);
+      try {
+        const res = await messagingService.getMessages(selectedConversation.id);
+        setMessages(normalizeMessages(res));
+      } catch {
+        setMessages([]);
+      } finally {
+        setMsgsLoading(false);
+      }
+    };
+    fetchMessages();
+  }, [selectedConversation?.id]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    const content = newMessage.trim();
+    if (!content || !selectedConversation || isSending) return;
+
+    setIsSending(true);
+    const optimisticMsg: Message = {
+      id: `opt-${Date.now()}`,
+      senderId: "me",
+      senderName: "Admin",
+      content,
+      createdAt: new Date().toISOString(),
+      isOwn: true,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setNewMessage("");
+
+    try {
+      const res = await messagingService.sendMessage(selectedConversation.id, content);
+      const sent = res as Record<string, unknown>;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === optimisticMsg.id
+            ? { ...optimisticMsg, id: String(sent?.id || optimisticMsg.id) }
+            : m
+        )
+      );
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConversation.id
+            ? { ...c, lastMessage: content, lastMessageTime: "Just now" }
+            : c
+        )
+      );
+    } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
+      const msg = err instanceof ApiError ? err.message : "Failed to send message";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const filteredConversations = conversations.filter((conv) => {
     const matchesSearch = conv.participantName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = filterRole === "all" || conv.participantRole === filterRole;
     return matchesSearch && matchesRole;
   });
 
-  const totalUnread = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
-
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      // In a real app, this would send the message via API
-      console.log("Sending message:", newMessage);
-      setNewMessage("");
-    }
-  };
-
-  const RoleIcon = selectedConversation ? roleIcons[selectedConversation.participantRole] : User;
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+  const RoleIcon = selectedConversation
+    ? roleIcons[selectedConversation.participantRole] ?? User
+    : User;
 
   return (
-    <div className="relative h-[calc(100vh-8rem)] flex gap-4">
-      <ComingSoon
-        title="Communication Hub"
-        description="In-app messaging between admins and clients is under development. This will be available once the messaging API is ready."
-      />
+    <div className="h-[calc(100vh-8rem)] flex gap-4">
       {/* Conversations List */}
       <Card className="w-80 flex flex-col">
         <CardHeader className="pb-3">
@@ -220,12 +235,11 @@ const CommunicationHub = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto p-0">
-          {/* Search and Filter */}
           <div className="p-4 pt-0 space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search providers..."
+                placeholder="Search conversations..."
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -247,76 +261,77 @@ const CommunicationHub = () => {
             </Select>
           </div>
 
-          {/* Conversation List */}
-          <div className="divide-y">
-            {filteredConversations.map((conv) => {
-              const Icon = roleIcons[conv.participantRole] || User;
-              return (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv)}
-                  className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-                    selectedConversation?.id === conv.id ? "bg-muted" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {conv.participantName
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {conv.online && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+          {convsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : convsError ? (
+            <div className="px-4 pb-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{convsError}</AlertDescription>
+              </Alert>
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm px-4">
+              {conversations.length === 0 ? "No conversations yet" : "No results match your search"}
+            </div>
+          ) : (
+            <div className="divide-y">
+              {filteredConversations.map((conv) => {
+                const Icon = roleIcons[conv.participantRole] ?? User;
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversation(conv)}
+                    className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
+                      selectedConversation?.id === conv.id ? "bg-muted" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="relative">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {conv.participantName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {conv.online && (
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium truncate">{conv.participantName}</p>
+                          <span className="text-xs text-muted-foreground">{conv.lastMessageTime}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Icon className="w-3 h-3" />
+                          <span>{conv.participantRole}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate mt-1">{conv.lastMessage}</p>
+                      </div>
+                      {conv.unreadCount > 0 && (
+                        <Badge variant="default" className="ml-2">{conv.unreadCount}</Badge>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium truncate">{conv.participantName}</p>
-                        <span className="text-xs text-muted-foreground">{conv.lastMessageTime}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Icon className="w-3 h-3" />
-                        <span>{conv.participantRole}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate mt-1">
-                        {conv.lastMessage}
-                      </p>
-                    </div>
-                    {conv.unreadCount > 0 && (
-                      <Badge variant="default" className="ml-2">
-                        {conv.unreadCount}
-                      </Badge>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Chat Area */}
-      <Card className="flex-1 flex flex-col">
+      <Card className="flex-1 flex flex-col overflow-hidden">
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
-            <CardHeader className="border-b">
+            <CardHeader className="border-b shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {selectedConversation.participantName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2)}
+                      {selectedConversation.participantName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -330,17 +345,11 @@ const CommunicationHub = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon">
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Mail className="w-4 h-4" />
-                  </Button>
+                  <Button variant="outline" size="icon"><Phone className="w-4 h-4" /></Button>
+                  <Button variant="outline" size="icon"><Mail className="w-4 h-4" /></Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
+                      <Button variant="outline" size="icon"><MoreVertical className="w-4 h-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>View Provider Profile</DropdownMenuItem>
@@ -352,39 +361,43 @@ const CommunicationHub = () => {
               </div>
             </CardHeader>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {mockMessages.map((message) => {
-                const isAdmin = message.senderId === "admin";
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
-                  >
+              {msgsLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                    <p className="text-sm">No messages yet. Say hello!</p>
+                  </div>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.isOwn ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        isAdmin
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                        msg.isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
                       }`}
                     >
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm">{msg.content}</p>
                       <div
                         className={`flex items-center justify-end gap-1 mt-1 text-xs ${
-                          isAdmin ? "text-primary-foreground/70" : "text-muted-foreground"
+                          msg.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                         }`}
                       >
-                        <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
-                        {isAdmin && <CheckCheck className="w-3 h-3" />}
+                        <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                        {msg.isOwn && <CheckCheck className="w-3 h-3" />}
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              )}
+              <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input */}
-            <div className="border-t p-4">
+            <div className="border-t p-4 shrink-0">
               <div className="flex items-end gap-2">
                 <Button variant="outline" size="icon" className="shrink-0">
                   <Paperclip className="w-4 h-4" />
@@ -403,8 +416,13 @@ const CommunicationHub = () => {
                     }}
                   />
                 </div>
-                <Button size="icon" className="shrink-0" onClick={handleSendMessage}>
-                  <Send className="w-4 h-4" />
+                <Button
+                  size="icon"
+                  className="shrink-0"
+                  onClick={handleSendMessage}
+                  disabled={isSending || !newMessage.trim()}
+                >
+                  {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
@@ -429,48 +447,30 @@ const CommunicationHub = () => {
             <div className="text-center">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                  {selectedConversation.participantName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2)}
+                  {selectedConversation.participantName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
               <p className="font-semibold mt-3">{selectedConversation.participantName}</p>
-              <Badge variant="outline" className="mt-1">
-                {selectedConversation.participantRole}
-              </Badge>
+              <Badge variant="outline" className="mt-1">{selectedConversation.participantRole}</Badge>
             </div>
 
             <div className="space-y-3 pt-4 border-t">
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                <span>{selectedConversation.participantId.toLowerCase()}@takehealth.com</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <span>+234 801 234 5678</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <span>Last seen: Online</span>
+                <span>{selectedConversation.online ? "Online now" : "Offline"}</span>
               </div>
             </div>
 
             <div className="space-y-3 pt-4 border-t">
               <p className="text-sm font-medium">Quick Actions</p>
               <Button variant="outline" className="w-full justify-start" size="sm">
-                <Mail className="w-4 h-4 mr-2" />
-                Send Email
+                <Mail className="w-4 h-4 mr-2" />Send Email
               </Button>
               <Button variant="outline" className="w-full justify-start" size="sm">
-                <Phone className="w-4 h-4 mr-2" />
-                Call Provider
+                <Phone className="w-4 h-4 mr-2" />Call Provider
               </Button>
               <Button variant="outline" className="w-full justify-start" size="sm">
-                <Stethoscope className="w-4 h-4 mr-2" />
-                View Profile
+                <Stethoscope className="w-4 h-4 mr-2" />View Profile
               </Button>
             </div>
           </CardContent>

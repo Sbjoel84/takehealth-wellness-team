@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { authService } from "@/services/authService";
 
 interface SidebarProps {
   open: boolean;
@@ -38,13 +39,35 @@ const menuItems = [
 
 const AdminSidebar = ({ open, setOpen }: SidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // Read stored user for display
+  const storedUser = authService.getStoredUser<{ name?: string; email?: string }>();
+  const displayName = storedUser?.name || "Admin User";
+  const displayEmail = storedUser?.email || "";
+  const initials = displayName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   const isActive = (path: string) => {
-    if (path === "/admin") {
-      return location.pathname === "/admin";
-    }
+    if (path === "/admin") return location.pathname === "/admin";
     return location.pathname.startsWith(path);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Ensure local session is always cleared even if server call fails
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      navigate("/login");
+    }
   };
 
   return (
@@ -59,12 +82,12 @@ const AdminSidebar = ({ open, setOpen }: SidebarProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-primary text-primary-foreground transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-primary text-primary-foreground flex flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-20 px-4 border-b border-primary/20">
+        <div className="flex items-center justify-between h-20 px-4 border-b border-primary/20 flex-shrink-0">
           <Link to="/admin" className="flex items-center gap-2">
             <img
               src="/logo.svg"
@@ -93,6 +116,7 @@ const AdminSidebar = ({ open, setOpen }: SidebarProps) => {
                   ? "bg-primary-foreground/10 text-primary-foreground"
                   : "text-primary-foreground/70 hover:bg-primary/10 hover:text-primary-foreground"
               }`}
+              onClick={() => setOpen(false)}
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
@@ -101,39 +125,43 @@ const AdminSidebar = ({ open, setOpen }: SidebarProps) => {
         </nav>
 
         {/* User Menu */}
-        <div className="p-4 border-t border-primary/20">
+        <div className="p-4 border-t border-primary/20 flex-shrink-0">
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-primary/10 transition-colors"
             >
               <Avatar className="w-8 h-8">
-                <AvatarImage src="" alt="Admin" />
-                <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
-                  AD
+                <AvatarImage src="" alt={displayName} />
+                <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-xs">
+                  {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-primary-foreground/60">Super Admin</p>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium truncate">{displayName}</p>
+                <p className="text-xs text-primary-foreground/60 truncate">{displayEmail}</p>
               </div>
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${
+                className={`w-4 h-4 flex-shrink-0 transition-transform ${
                   userMenuOpen ? "rotate-180" : ""
                 }`}
               />
             </button>
 
             {userMenuOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-card rounded-lg shadow-lg border overflow-hidden">
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-card rounded-lg shadow-lg border overflow-hidden z-10">
                 <Link
-                  to="/admin/profile"
+                  to="/admin/settings"
                   className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-muted transition-colors"
+                  onClick={() => setUserMenuOpen(false)}
                 >
                   <Settings className="w-4 h-4" />
                   Profile Settings
                 </Link>
-                <button className="flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-muted w-full transition-colors">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-muted w-full transition-colors"
+                >
                   <LogOut className="w-4 h-4" />
                   Logout
                 </button>

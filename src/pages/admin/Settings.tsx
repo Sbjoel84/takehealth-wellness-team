@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, User, Bell, Lock, Mail, Phone, MapPin, Camera, Eye, EyeOff, Loader2, Info } from "lucide-react";
+import { Save, User, Bell, Lock, Mail, Camera, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { authApi } from "@/lib/api-client";
+import { authService } from "@/services/authService";
+import { ApiError } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 const NOTIF_KEY = "takehealth_notification_prefs";
@@ -66,32 +66,34 @@ export default function Settings() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await authApi.getProfile();
-        const user = data.user ?? data;
+        // Try live session first
+        const data = await authService.getCurrentUser() as { user?: Record<string, string> };
+        const user = (data?.user ?? data) as Record<string, string>;
+        const name: string = user.name || "";
+        const parts = name.trim().split(" ");
         setProfile({
-          firstName: user.firstName || user.fullName?.split(" ")[0] || "",
-          lastName: user.lastName || user.fullName?.split(" ").slice(1).join(" ") || "",
-          fullName: user.fullName || `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
-          email: user.email || "",
-          phone: user.phone || "",
-          role: user.role || "",
+          firstName: parts[0] || "Admin",
+          lastName:  parts.slice(1).join(" ") || "",
+          fullName:  name || "Admin",
+          email:     user.email  || "",
+          phone:     user.phone  || "",
+          role:      user.role   || "",
         });
       } catch {
-        // Fall back to locally stored user if profile endpoint fails
-        try {
-          const stored = localStorage.getItem("user");
-          if (stored) {
-            const user = JSON.parse(stored);
-            setProfile({
-              firstName: user.firstName || user.fullName?.split(" ")[0] || "Admin",
-              lastName: user.lastName || user.fullName?.split(" ").slice(1).join(" ") || "",
-              fullName: user.fullName || `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
-              email: user.email || "",
-              phone: user.phone || "",
-              role: user.role || "ADMIN",
-            });
-          }
-        } catch { /* ignore */ }
+        // Fall back to cached user in localStorage
+        const stored = authService.getStoredUser<Record<string, string>>();
+        if (stored) {
+          const name: string = stored.name || "";
+          const parts = name.trim().split(" ");
+          setProfile({
+            firstName: parts[0] || "Admin",
+            lastName:  parts.slice(1).join(" ") || "",
+            fullName:  name || "Admin",
+            email:     stored.email || "",
+            phone:     stored.phone || "",
+            role:      stored.role  || "ADMIN",
+          });
+        }
       } finally {
         setProfileLoading(false);
       }
@@ -109,7 +111,7 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
-    if (!passwords.currentPassword || !passwords.newPassword) {
+    if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
       toast({ title: "Please fill in all password fields", variant: "destructive" });
       return;
     }
@@ -117,11 +119,24 @@ export default function Settings() {
       toast({ title: "New passwords do not match", variant: "destructive" });
       return;
     }
-    toast({
-      title: "Password change unavailable",
-      description: "A password update endpoint is not yet available on the backend.",
-      variant: "destructive",
-    });
+    if (passwords.newPassword.length < 8) {
+      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await authService.changePassword({
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      });
+      toast({ title: "Password updated successfully" });
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Failed to update password";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const initials =
@@ -240,12 +255,6 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h3 className="font-medium text-lg">Change Password</h3>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    Password changes will be available once the backend exposes a change-password endpoint.
-                  </AlertDescription>
-                </Alert>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="currentPassword">Current Password</Label>
@@ -284,8 +293,8 @@ export default function Settings() {
                     />
                   </div>
                 </div>
-                <Button variant="outline" onClick={handleChangePassword}>
-                  Update Password
+                <Button variant="outline" onClick={handleChangePassword} disabled={isSaving}>
+                  {isSaving ? "Updating..." : "Update Password"}
                 </Button>
               </div>
 

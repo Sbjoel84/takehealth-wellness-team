@@ -15,6 +15,8 @@ import {
   Salad,
   Scissors,
   RefreshCw,
+  AlertCircle,
+  WifiOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,14 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  dashboardApi,
-  appointmentsApi,
-  patientsApi,
-  DashboardOverview as DashboardOverviewType,
-  Appointment,
-  Patient,
-} from "@/lib/api-client";
+import { dashboardService } from "../../services/dashboardService";
+import { DashboardOverview as DashboardOverviewType, Appointment, Patient } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 
 interface StatsCardProps {
@@ -85,22 +81,48 @@ const DashboardOverview = () => {
   const [overview, setOverview] = useState<DashboardOverviewType | null>(null);
   const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
   const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const getDateRange = (range: string) => {
+    const now = new Date();
+    const pad = (d: Date) => d.toISOString().split("T")[0];
+    switch (range) {
+      case "week": {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 7);
+        return { from: pad(start), to: pad(now) };
+      }
+      case "month": {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { from: pad(start), to: pad(now) };
+      }
+      case "quarter": {
+        const start = new Date(now);
+        start.setMonth(now.getMonth() - 3);
+        return { from: pad(start), to: pad(now) };
+      }
+      default:
+        return { from: pad(now), to: pad(now) };
+    }
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setConnectError(null);
     try {
+      const dateRange = getDateRange(timeRange);
       const [dashboardData, patientsData, appointmentsData] = await Promise.all([
-        dashboardApi.getOverview(),
-        patientsApi.getAll({ page: 1, limit: 5 }),
-        appointmentsApi.getAll({ page: 1, limit: 5 }),
+        dashboardService.getOverview(dateRange),
+        dashboardService.getRecentPatients(5),
+        dashboardService.getRecentAppointments(5),
       ]);
       setOverview(dashboardData);
       setRecentPatients(patientsData.data || []);
       setRecentAppointments(appointmentsData.data || []);
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
-      toast({ title: "Error", description: "Failed to load dashboard data", variant: "destructive" });
+      const msg = error instanceof Error ? error.message : "Failed to connect to the server.";
+      setConnectError(msg);
     } finally {
       setLoading(false);
     }
@@ -138,6 +160,31 @@ const DashboardOverview = () => {
           </Button>
         </div>
       </div>
+
+      {/* Backend connection error banner */}
+      {connectError && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <WifiOff className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-amber-800 text-sm">Backend server unreachable</p>
+            <p className="text-amber-700 text-sm mt-0.5">
+              {connectError.includes("401") || connectError.includes("Session")
+                ? "You are not logged in. Log in to see live data."
+                : "The server may be starting up (cold start takes ~30 s). Click Refresh to try again."}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-300 text-amber-800 hover:bg-amber-100 flex-shrink-0"
+            onClick={() => { setConnectError(null); fetchDashboardData(); }}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-3 h-3 mr-1 ${loading ? "animate-spin" : ""}`} />
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

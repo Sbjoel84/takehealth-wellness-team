@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ComingSoon } from "@/components/ui/ComingSoon";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { apiRequest, ApiError } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface OnboardingForm {
   id: string;
@@ -36,29 +40,79 @@ const serviceLabels: Record<string, string> = {
   GENERAL: "General",
 };
 
+function normalizeForm(raw: Record<string, unknown>): OnboardingForm {
+  const client = (raw.client as Record<string, unknown>) ||
+    (raw.patient as Record<string, unknown>) || {};
+  return {
+    id: String(raw.id || ""),
+    assessmentId: String(raw.assessmentId || raw.id || ""),
+    client: {
+      fullName: String(client.fullName || client.name || `${client.firstName || ""} ${client.lastName || ""}`.trim() || "Unknown"),
+      email: String(client.email || ""),
+    },
+    formType: String(raw.formType || raw.type || raw.serviceType || "GENERAL"),
+    status: String(raw.status || "PENDING"),
+    createdAt: String(raw.createdAt || raw.created_at || new Date().toISOString()),
+    formData: (raw.formData || raw.data || {}) as Record<string, unknown>,
+  };
+}
+
 const OnboardingList = () => {
+  const { toast } = useToast();
+
+  const [apiUnavailable, setApiUnavailable] = useState(false);
   const [onboardingForms, setOnboardingForms] = useState<OnboardingForm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [selectedForm, setSelectedForm] = useState<OnboardingForm | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [reviewStatus, setReviewStatus] = useState("APPROVED");
   const [reviewNotes, setReviewNotes] = useState("");
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
-  const [filters, setFilters] = useState({
-    status: "",
-    formType: "",
-    search: "",
-  });
+  const [isReviewing, setIsReviewing] = useState(false);
 
-  useEffect(() => {
-    setLoading(false);
-    setOnboardingForms([]);
-  }, [pagination.page, filters]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [filters, setFilters] = useState({ status: "", formType: "", search: "" });
+
+  const fetchForms = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const q = new URLSearchParams();
+      q.set("page", String(pagination.page));
+      q.set("limit", String(pagination.limit));
+      if (filters.status) q.set("status", filters.status);
+      if (filters.formType) q.set("formType", filters.formType);
+      if (filters.search) q.set("search", filters.search);
+
+      const res = await apiRequest(`/api/onboarding-forms?${q}`);
+      const list: unknown[] = Array.isArray(res)
+        ? res
+        : Array.isArray((res as Record<string, unknown>)?.data)
+        ? ((res as Record<string, unknown>).data as unknown[])
+        : [];
+      const meta = (res as Record<string, unknown>)?.meta as Record<string, unknown> | undefined;
+
+      setOnboardingForms(list.map((f) => normalizeForm(f as Record<string, unknown>)));
+      setPagination((prev) => ({
+        ...prev,
+        total: Number(meta?.total ?? list.length),
+        totalPages: Number(meta?.totalPages ?? Math.ceil((meta?.total ?? list.length) as number / prev.limit)),
+      }));
+      setApiUnavailable(false);
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 404 || err.status === 501)) {
+        setApiUnavailable(true);
+      } else {
+        const msg = err instanceof ApiError ? err.message : "Failed to load onboarding forms";
+        setError(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.page, pagination.limit, filters]);
+
+  useEffect(() => { fetchForms(); }, [fetchForms]);
 
   const handleViewForm = (form: OnboardingForm) => {
     setSelectedForm(form);
@@ -67,14 +121,25 @@ const OnboardingList = () => {
     setIsDialogOpen(true);
   };
 
-  const handleReviewForm = () => {
-    if (selectedForm) {
-      setOnboardingForms((prev) =>
-        prev.map((f) => (f.id === selectedForm.id ? { ...f, status: reviewStatus } : f))
-      );
-      setSelectedForm((prev) => (prev ? { ...prev, status: reviewStatus } : null));
+  const handleReviewForm = async () => {
+    if (!selectedForm) return;
+    setIsReviewing(true);
+    try {
+      await apiRequest(`/api/onboarding-forms/${selectedForm.id}/review`, "PATCH", {
+        status: reviewStatus,
+        notes: reviewNotes,
+      });
+      const updated = { ...selectedForm, status: reviewStatus };
+      setOnboardingForms((prev) => prev.map((f) => (f.id === selectedForm.id ? updated : f)));
+      setSelectedForm(updated);
+      toast({ title: "Review submitted successfully" });
+      setIsDialogOpen(false);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Failed to submit review";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setIsReviewing(false);
     }
-    setIsDialogOpen(false);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -82,15 +147,41 @@ const OnboardingList = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
+  if (apiUnavailable) {
+    return (
+      <div className="relative space-y-6">
+        <ComingSoon
+          title="Onboarding Forms"
+          description="Client onboarding form management is coming soon. The API endpoint is not yet available."
+        />
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Onboarding Forms</h1>
+            <p className="text-muted-foreground">Review and manage client onboarding forms</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative space-y-6">
-      <ComingSoon title="Onboarding Forms" description="Client onboarding form management is coming soon." />
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Onboarding Forms</h1>
           <p className="text-muted-foreground">Review and manage client onboarding forms</p>
         </div>
+        <Button variant="outline" size="icon" onClick={fetchForms} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        </Button>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardContent className="pt-6">
@@ -110,9 +201,9 @@ const OnboardingList = () => {
             <div className="w-full md:w-48">
               <Label>Status</Label>
               <Select
-                value={filters.status}
+                value={filters.status || "all"}
                 onValueChange={(value) => {
-                  setFilters((prev) => ({ ...prev, status: value }));
+                  setFilters((prev) => ({ ...prev, status: value === "all" ? "" : value }));
                   setPagination((prev) => ({ ...prev, page: 1 }));
                 }}
               >
@@ -120,7 +211,7 @@ const OnboardingList = () => {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="PENDING">Pending</SelectItem>
                   <SelectItem value="APPROVED">Approved</SelectItem>
                   <SelectItem value="CANCELLED">Cancelled</SelectItem>
@@ -131,9 +222,9 @@ const OnboardingList = () => {
             <div className="w-full md:w-48">
               <Label>Service Type</Label>
               <Select
-                value={filters.formType}
+                value={filters.formType || "all"}
                 onValueChange={(value) => {
-                  setFilters((prev) => ({ ...prev, formType: value }));
+                  setFilters((prev) => ({ ...prev, formType: value === "all" ? "" : value }));
                   setPagination((prev) => ({ ...prev, page: 1 }));
                 }}
               >
@@ -141,7 +232,7 @@ const OnboardingList = () => {
                   <SelectValue placeholder="All Services" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Services</SelectItem>
+                  <SelectItem value="all">All Services</SelectItem>
                   {Object.entries(serviceLabels).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
@@ -156,18 +247,16 @@ const OnboardingList = () => {
         <CardHeader>
           <CardTitle>All Onboarding Forms</CardTitle>
           <CardDescription>
-            Showing {onboardingForms.length} of {pagination.total} forms
+            {loading ? "Loading…" : `Showing ${onboardingForms.length} of ${pagination.total} forms`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : onboardingForms.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No onboarding forms found
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No onboarding forms found</div>
           ) : (
             <div className="space-y-4">
               {onboardingForms.map((form) => (
@@ -182,9 +271,7 @@ const OnboardingList = () => {
                         <p className="text-sm text-muted-foreground">{form.client.email}</p>
                       </div>
                       <Badge variant="outline">{serviceLabels[form.formType] || form.formType}</Badge>
-                      <Badge className={statusColors[form.status] || "bg-gray-500"}>
-                        {form.status}
-                      </Badge>
+                      <Badge className={statusColors[form.status] || "bg-gray-500"}>{form.status}</Badge>
                     </div>
                   </div>
                   <div className="text-right">
@@ -194,9 +281,7 @@ const OnboardingList = () => {
                     </p>
                   </div>
                   <div className="ml-4">
-                    <Button variant="outline" onClick={() => handleViewForm(form)}>
-                      View
-                    </Button>
+                    <Button variant="outline" onClick={() => handleViewForm(form)}>View</Button>
                   </div>
                 </div>
               ))}
@@ -205,9 +290,8 @@ const OnboardingList = () => {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
+        <div className="flex items-center justify-center gap-2">
           {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
             <Button
               key={page}
@@ -268,11 +352,9 @@ const OnboardingList = () => {
                 <div className="border-t pt-4 space-y-4">
                   <h3 className="font-semibold">Review Form</h3>
                   <div className="space-y-2">
-                    <Label>Status</Label>
+                    <Label>Decision</Label>
                     <Select value={reviewStatus} onValueChange={setReviewStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="APPROVED">Approve</SelectItem>
                         <SelectItem value="CANCELLED">Cancel</SelectItem>
@@ -292,12 +374,12 @@ const OnboardingList = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isReviewing}>
               Close
             </Button>
             {selectedForm?.status === "PENDING" && (
-              <Button onClick={handleReviewForm}>
-                Submit Review
+              <Button onClick={handleReviewForm} disabled={isReviewing}>
+                {isReviewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting…</> : "Submit Review"}
               </Button>
             )}
           </DialogFooter>

@@ -11,6 +11,8 @@ import Contact from "./pages/Contact";
 import Health360 from "./pages/Health360";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import FAQs from "./pages/FAQs";
 import Privacy from "./pages/Privacy";
@@ -24,12 +26,15 @@ import DashboardOverview from "./pages/admin/DashboardOverview";
 import ClientList from "./pages/admin/ClientList";
 import AddClient from "./pages/admin/AddClient";
 import AppointmentList from "./pages/admin/AppointmentList";
+import AddAppointment from "./pages/admin/AddAppointment";
 import OnboardingList from "./pages/admin/OnboardingList";
 import ServiceProviderManagement from "./pages/admin/ServiceProviderManagement";
 import ClientProgressTracking from "./pages/admin/ClientProgressTracking";
 import CommunicationHub from "./pages/admin/CommunicationHub";
 import DocumentsPage from "./pages/admin/Documents";
 import Settings from "./pages/admin/Settings";
+import PrivateRoute from "./components/auth/PrivateRoute";
+import { AuthProvider } from "./hooks/useAuth";
 
 // Scroll to top on navigation
 function ScrollToTop() {
@@ -43,6 +48,7 @@ function ScrollToTop() {
 }
 
 const App = () => (
+  <AuthProvider>
   <TooltipProvider>
     <Toaster />
     <Sonner />
@@ -57,6 +63,8 @@ const App = () => (
         <Route path="/health360" element={<Health360 />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/faqs" element={<FAQs />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
@@ -65,18 +73,21 @@ const App = () => (
         <Route path="/careers" element={<Careers />} />
         <Route path="/get-started" element={<GetStarted />} />
         
-        {/* Admin Dashboard Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<DashboardOverview />} />
-          <Route path="clients" element={<ClientList />} />
-          <Route path="clients/add" element={<AddClient />} />
-          <Route path="onboarding" element={<OnboardingList />} />
-          <Route path="appointments" element={<AppointmentList />} />
-          <Route path="providers" element={<ServiceProviderManagement />} />
-          <Route path="progress" element={<ClientProgressTracking />} />
-          <Route path="communications" element={<CommunicationHub />} />
-          <Route path="documents" element={<DocumentsPage />} />
-          <Route path="settings" element={<Settings />} />
+        {/* Admin Dashboard Routes — protected */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<DashboardOverview />} />
+            <Route path="clients" element={<ClientList />} />
+            <Route path="clients/add" element={<AddClient />} />
+            <Route path="onboarding" element={<OnboardingList />} />
+            <Route path="appointments" element={<AppointmentList />} />
+            <Route path="appointments/new" element={<AddAppointment />} />
+            <Route path="providers" element={<ServiceProviderManagement />} />
+            <Route path="progress" element={<ClientProgressTracking />} />
+            <Route path="communications" element={<CommunicationHub />} />
+            <Route path="documents" element={<DocumentsPage />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
         </Route>
         
         {/* Service Registration Routes - Linked to Admin Dashboard */}
@@ -93,6 +104,7 @@ const App = () => (
       </Routes>
     </BrowserRouter>
   </TooltipProvider>
+  </AuthProvider>
 );
 
 export default App;

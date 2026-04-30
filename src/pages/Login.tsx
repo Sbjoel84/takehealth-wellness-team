@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
-import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { authApi } from "@/lib/api-client";
+import { ApiError } from "../services/api";
+import { useAuth } from "@/hooks/useAuth";
 import loginImage from "@/assets/spa.png";
 
 const Login = () => {
@@ -18,7 +18,10 @@ const Login = () => {
     password: "",
   });
   const { toast } = useToast();
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/admin";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -32,31 +35,16 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await authApi.signIn({
-        email: formData.email,
-        password: formData.password,
-      });
+      await login({ email: formData.email, password: formData.password });
 
-      if (response.token) {
-        localStorage.setItem("token", response.token);
-      }
-      localStorage.setItem("user", JSON.stringify(response.user));
-
-      const displayName = response.user.name?.split(" ")[0] || "Admin";
-
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${displayName}!`,
-      });
-
-      navigate("/admin");
+      toast({ title: "Login Successful", description: "Welcome back!" });
+      navigate(from, { replace: true });
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string }>;
-      toast({
-        title: "Login Failed",
-        description: axiosError.response?.data?.message || "Invalid email or password",
-        variant: "destructive",
-      });
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Invalid email or password";
+      toast({ title: "Login Failed", description: message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

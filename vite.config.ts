@@ -10,6 +10,18 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/api": {
+        target: "https://take-health-web-api.onrender.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/auth": {
+        target: "https://take-health-web-api.onrender.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   plugins: [react()],
   resolve: {
