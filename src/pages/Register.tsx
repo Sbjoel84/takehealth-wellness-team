@@ -10,8 +10,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, ApiError } from "../services/api";
 import { motion } from "framer-motion";
+
+const FORMSPREE_URL = import.meta.env.VITE_FORMSPREE_URL as string | undefined;
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle2, CreditCard, Phone, Mail, Copy, Check } from "lucide-react";
 
@@ -78,8 +79,6 @@ const CONTACT = {
   email: "info@takehealthglobal.com",
 };
 
-const genderMap: Record<string, string> = { male: "MALE", female: "FEMALE", other: "OTHER" };
-const maritalMap: Record<string, string> = { single: "SINGLE", married: "MARRIED", divorced: "DIVORCED", widowed: "WIDOWED" };
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -145,37 +144,56 @@ const Register = () => {
       return;
     }
     setIsLoading(true);
+
+    const selectedService = SERVICE_LABELS[urlService] || formData.serviceType || "—";
+    const selectedPlan    = planInfo ? `${planInfo.name} — ${planInfo.price} ${planInfo.period}`.trim() : "—";
+
+    const payload = {
+      "Full Name":              formData.fullName,
+      "Email":                  formData.email,
+      "Phone":                  formData.phone,
+      "Service":                selectedService,
+      "Plan":                   selectedPlan,
+      "Date of Birth":          formData.dateOfBirth      || "—",
+      "Gender":                 formData.gender           || "—",
+      "Marital Status":         formData.maritalStatus    || "—",
+      "Address":                formData.address          || "—",
+      "Emergency Contact":      formData.emergencyContact || "—",
+      "Emergency Phone":        formData.emergencyPhone   || "—",
+      "Allergies":              formData.allergies        || "—",
+      "Medical History":        formData.medicalHistory   || "—",
+    };
+
     try {
-      const authResponse = await apiRequest("/auth/sign-up/email", "POST", {
-        name: formData.fullName,
-        email: formData.email,
-        password: formData.password,
-        rememberMe: true,
-      });
-
-      if ((authResponse as Record<string, unknown>).token)
-        localStorage.setItem("token", String((authResponse as Record<string, unknown>).token));
-      if ((authResponse as Record<string, unknown>).user)
-        localStorage.setItem("user", JSON.stringify((authResponse as Record<string, unknown>).user));
-
-      await apiRequest("/api/patients", "POST", {
-        firstName: formData.fullName.split(" ")[0],
-        lastName:  formData.fullName.split(" ").slice(1).join(" ") || formData.fullName.split(" ")[0],
-        dateOfBirth:          formData.dateOfBirth   || undefined,
-        gender:               genderMap[formData.gender] || "NOT_SPECIFIED",
-        maritalStatus:        maritalMap[formData.maritalStatus] || "NOT_SPECIFIED",
-        phone:                formData.phone         || undefined,
-        allergies:            formData.allergies ? formData.allergies.split(",").map((a) => a.trim()) : [],
-        medicalHistory:       formData.medicalHistory || undefined,
-        emergencyContactName: formData.emergencyContact || undefined,
-        emergencyContactPhone:formData.emergencyPhone   || undefined,
-      });
+      if (FORMSPREE_URL) {
+        const res = await fetch(FORMSPREE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error((json as { error?: string }).error || "Submission failed. Please try again.");
+        }
+      } else {
+        // No Formspree configured — open a pre-filled email to the team
+        const subject = encodeURIComponent(
+          `New Registration: ${formData.fullName} — ${selectedService} (${planInfo?.name ?? ""})`
+        );
+        const body = encodeURIComponent(
+          Object.entries(payload).map(([k, v]) => `${k}: ${v}`).join("\n")
+        );
+        window.open(`mailto:${CONTACT.email}?subject=${subject}&body=${body}`);
+      }
 
       setRegisteredEmail(formData.email);
-      setStep(4); // payment/confirmation step
+      setStep(4);
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : "An error occurred. Please try again.";
-      toast({ title: "Registration Failed", description: message, variant: "destructive" });
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Please try again or contact us directly.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -417,7 +435,7 @@ const Register = () => {
                         <Checkbox id="agreeToTerms" checked={formData.agreeToTerms}
                           onCheckedChange={(c) => set("agreeToTerms", !!c)} />
                         <Label htmlFor="agreeToTerms" className="text-sm">
-                          I agree to the <Link to="/terms" className="text-primary underline">Terms and Conditions</Link> *
+                          I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms and Conditions</a> *
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">

@@ -3,7 +3,7 @@ import { apiRequest } from "./api";
 export const authService = {
   async login(credentials: { email: string; password: string }) {
     const data = await apiRequest<{ token: string | null; user: Record<string, unknown> }>(
-      "/auth/sign-in/email",
+      "/api/auth/sign-in/email",
       "POST",
       { ...credentials, rememberMe: true }
     );
@@ -14,7 +14,7 @@ export const authService = {
 
   async register(payload: { name: string; email: string; password: string }) {
     const data = await apiRequest<{ token: string | null; user: Record<string, unknown> }>(
-      "/auth/sign-up/email",
+      "/api/auth/sign-up/email",
       "POST",
       { ...payload, rememberMe: true }
     );
@@ -24,17 +24,17 @@ export const authService = {
   },
 
   async logout() {
-    await apiRequest("/auth/sign-out", "POST");
+    await apiRequest("/api/auth/sign-out", "POST");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   },
 
   async getCurrentUser() {
-    return apiRequest("/auth/get-session");
+    return apiRequest("/api/auth/get-session");
   },
 
   async changePassword(data: { currentPassword: string; newPassword: string }) {
-    return apiRequest("/auth/change-password", "POST", data);
+    return apiRequest("/api/auth/change-password", "POST", data);
   },
 
   getStoredUser<T = unknown>(): T | null {

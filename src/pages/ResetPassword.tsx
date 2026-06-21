@@ -38,7 +38,7 @@ const ResetPassword = () => {
 
     setIsLoading(true);
     try {
-      await apiRequest("/auth/reset-password", "POST", {
+      await apiRequest("/api/auth/reset-password", "POST", {
         newPassword,
         token,
       });

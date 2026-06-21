@@ -26,7 +26,7 @@ const footerLinks = {
     { label: "FAQs", href: "/faqs" },
     { label: "Help Center", href: "/help" },
     { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
+    { label: "Terms of Service", href: "/terms", newTab: true },
   ],
 };
 
@@ -128,12 +128,23 @@ export function Footer() {
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-white/80 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
+                  {link.newTab ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white/80 hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.href}
+                      className="text-white/80 hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
