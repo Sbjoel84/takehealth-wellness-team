@@ -165,25 +165,47 @@ const Register = () => {
     };
 
     try {
+      // Save to backend database (primary)
+      const BASE_URL =
+        (import.meta.env.VITE_API_URL as string | undefined) ||
+        (import.meta.env.DEV ? "" : "https://take-health-web-api.onrender.com");
+
+      const apiRes = await fetch(`${BASE_URL}/api/registrations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName:        formData.fullName,
+          email:           formData.email,
+          phone:           formData.phone,
+          dateOfBirth:     formData.dateOfBirth     || null,
+          gender:          formData.gender           || null,
+          maritalStatus:   formData.maritalStatus    || null,
+          address:         formData.address          || null,
+          emergencyContact:formData.emergencyContact || null,
+          emergencyPhone:  formData.emergencyPhone   || null,
+          serviceType:     formData.serviceType      || null,
+          planId:          urlPlan                   || null,
+          allergies:       formData.allergies        || null,
+          medicalHistory:  formData.medicalHistory   || null,
+        }),
+      });
+
+      if (!apiRes.ok) {
+        const json = await apiRes.json().catch(() => ({}));
+        const msg = (json as { message?: string }).message;
+        // 409 = already registered, treat as success so user can see payment info
+        if (apiRes.status !== 409) {
+          throw new Error(msg || "Submission failed. Please try again.");
+        }
+      }
+
+      // Send to Formspree as email notification (secondary, optional)
       if (FORMSPREE_URL) {
-        const res = await fetch(FORMSPREE_URL, {
+        await fetch(FORMSPREE_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const json = await res.json().catch(() => ({}));
-          throw new Error((json as { error?: string }).error || "Submission failed. Please try again.");
-        }
-      } else {
-        // No Formspree configured — open a pre-filled email to the team
-        const subject = encodeURIComponent(
-          `New Registration: ${formData.fullName} — ${selectedService} (${planInfo?.name ?? ""})`
-        );
-        const body = encodeURIComponent(
-          Object.entries(payload).map(([k, v]) => `${k}: ${v}`).join("\n")
-        );
-        window.open(`mailto:${CONTACT.email}?subject=${subject}&body=${body}`);
+        }).catch(() => { /* non-critical */ });
       }
 
       setRegisteredEmail(formData.email);

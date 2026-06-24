@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Better Auth required tables ─────────────────────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  role          String    @default("CLIENT")
+
+  sessions Session[]
+  accounts Account[]
+  patient  Patient?
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String    @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+// ─── Application tables ───────────────────────────────────────────────────────
+
+model ClientRegistration {
+  id               String    @id @default(cuid())
+  fullName         String
+  email            String
+  phone            String
+  dateOfBirth      String?
+  gender           String?
+  maritalStatus    String?
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  serviceType      String?
+  planId           String?
+  allergies        String?
+  medicalHistory   String?
+  status           String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  adminNotes       String?
+  reviewedAt       DateTime?
+  reviewedBy       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("client_registration")
+}
+
+model Patient {
+  id                    String        @id @default(cuid())
+  userId                String?       @unique
+  user                  User?         @relation(fields: [userId], references: [id])
+  firstName             String
+  lastName              String
+  email                 String?
+  phone                 String?
+  dateOfBirth           DateTime?
+  gender                String        @default("NOT_SPECIFIED")
+  maritalStatus         String        @default("NOT_SPECIFIED")
+  bloodType             String?
+  allergies             String[]      @default([])
+  medicalHistory        String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  address               String?
+  serviceType           String?
+  planId                String?
+  status                String        @default("ACTIVE")
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  appointments          Appointment[]
+
+  @@map("patient")
+}
+
+model HealthServiceProvider {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?       @unique
+  phone        String?
+  type         String
+  specialty    String?
+  location     String?
+  status       String        @default("ACTIVE") // ACTIVE | INACTIVE | PENDING
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+
+  @@map("health_service_provider")
+}
+
+model Appointment {
+  id           String                @id @default(cuid())
+  reference    String                @unique @default(cuid())
+  userId       String?
+  patientId    String
+  patient      Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId   String
+  provider     HealthServiceProvider @relation(fields: [providerId], references: [id])
+  serviceId    String?
+  scheduledAt  DateTime
+  type         String                @default("IN_PERSON") // IN_PERSON | VIRTUAL | HOME_VISIT
+  status       String                @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED | NO_SHOW | RESCHEDULED
+  notes        String?
+  duration     Int?
+  cancelReason String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@map("appointment")
+}

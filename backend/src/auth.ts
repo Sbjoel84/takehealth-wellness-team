@@ -1,0 +1,29 @@
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { prisma } from "./db.js";
+
+export const auth = betterAuth({
+  database: prismaAdapter(prisma, { provider: "postgresql" }),
+
+  emailAndPassword: { enabled: true },
+
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "CLIENT",
+        required: false,
+      },
+    },
+  },
+
+  secret: process.env.BETTER_AUTH_SECRET!,
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
+  basePath: "/api/auth",
+
+  trustedOrigins: [
+    process.env.FRONTEND_URL || "http://localhost:8080",
+    "https://take-health-wellness.vercel.app",
+    "https://lovable.app",
+  ],
+});

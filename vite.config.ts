@@ -11,21 +11,14 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
+      // In development, set VITE_BACKEND_PROXY=http://localhost:5000 to hit a local backend.
+      // In CI / staging it falls back to the live Render service.
       "/api": {
-        target: "https://take-health-web-api.onrender.com",
+        target: process.env.VITE_BACKEND_PROXY || "https://take-health-web-api.onrender.com",
         changeOrigin: true,
         secure: true,
         proxyTimeout: 120_000,
         timeout: 120_000,
-        headers: { origin: "https://take-health-web-api.onrender.com" },
-      },
-      "/auth": {
-        target: "https://take-health-web-api.onrender.com",
-        changeOrigin: true,
-        secure: true,
-        proxyTimeout: 120_000,
-        timeout: 120_000,
-        headers: { origin: "https://take-health-web-api.onrender.com" },
       },
     },
   },

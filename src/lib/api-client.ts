@@ -119,30 +119,30 @@ export interface PaginatedResponse<T> {
 export const authApi = {
   signUp: async (data: { name: string; email: string; password: string }) => {
     const res = await apiClient.post<{ token: string | null; user: ApiUser }>(
-      '/auth/sign-up/email', { ...data, rememberMe: true }
+      '/api/auth/sign-up/email', { ...data, rememberMe: true }
     );
     return res.data;
   },
 
   signIn: async (data: { email: string; password: string }) => {
     const res = await apiClient.post<{ token: string | null; user: ApiUser }>(
-      '/auth/sign-in/email', { ...data, rememberMe: true }
+      '/api/auth/sign-in/email', { ...data, rememberMe: true }
     );
     return res.data;
   },
 
   getSession: async () => {
-    const res = await apiClient.get<{ user: ApiUser; session: unknown }>('/auth/get-session');
+    const res = await apiClient.get<{ user: ApiUser; session: unknown }>('/api/auth/get-session');
     return res.data;
   },
 
   getProfile: async () => {
-    const res = await apiClient.get<{ user: ApiUser; session: unknown }>('/auth/get-session');
+    const res = await apiClient.get<{ user: ApiUser; session: unknown }>('/api/auth/get-session');
     return res.data;
   },
 
   signOut: async () => {
-    await apiClient.post('/auth/sign-out');
+    await apiClient.post('/api/auth/sign-out');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
