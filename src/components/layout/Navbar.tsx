@@ -9,6 +9,7 @@ const navLinks = [
   { label: "About", href: "/about" },
   { label: "Services", href: "/services" },
   { label: "Health360+", href: "/health360" },
+  { label: "News & Events", href: "/news" },
   { label: "Contact", href: "/contact" },
 ];
 

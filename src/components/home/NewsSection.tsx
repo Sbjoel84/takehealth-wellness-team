@@ -3,8 +3,16 @@ import { Calendar, ArrowRight } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import movefestImage from "@/assets/movefest green.png";
 
 const newsEvents = [
+  {
+    date: "October 1, 2026",
+    title: "MoveFest — Season 1",
+    description: "6:30 AM at the takehealth Facility/Arena. Hosted by the Fitness & Wellness Department.",
+    tag: "Featured Event",
+    image: movefestImage,
+  },
   {
     date: "February 2026",
     title: "Launch and Commissioning of the Kubwa Centre",
@@ -49,8 +57,16 @@ export function NewsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="card-wellness p-6"
+              className="card-wellness overflow-hidden p-0"
             >
+              {event.image && (
+                <img
+                  src={event.image}
+                  alt={event.title}
+                  className="w-full h-40 object-cover"
+                />
+              )}
+              <div className="p-6">
               <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
                 <Calendar className="w-4 h-4" />
                 <span>{event.date}</span>
@@ -62,6 +78,7 @@ export function NewsSection() {
                 {event.title}
               </h3>
               <p className="text-muted-foreground text-sm">{event.description}</p>
+              </div>
             </motion.div>
           ))}
         </div>

@@ -5,8 +5,16 @@
  import { Button } from "@/components/ui/button";
  import { Link } from "react-router-dom";
  import { Calendar, ArrowRight, Tag } from "lucide-react";
+ import moveFestFlyer from "@/assets/MoveFest flyer.jpeg";
  
  const newsItems = [
+   {
+     date: "October 1, 2026",
+     category: "Fitness & Wellness Department",
+     title: "MoveFest — Season 1",
+     excerpt: "Join us for MoveFest — Season 1, hosted by the Fitness & Wellness Department. Event Date: October 1 | Time: 6:30 AM | Venue: takehealth Facility/Arena.",
+     featured: true
+   },
    {
      date: "February 14, 2026",
      category: "Launch Event",
@@ -115,7 +123,23 @@
              title="News & Events"
              description="Discover what's happening at takehealth and join us in our wellness journey."
            />
- 
+
+           <motion.div
+             initial={{ opacity: 0, scale: 0.9 }}
+             whileInView={{ opacity: 1, scale: 1 }}
+             viewport={{ once: true }}
+             transition={{ duration: 0.6 }}
+             className="mt-12 flex justify-center"
+           >
+             <motion.img
+               src={moveFestFlyer}
+               alt="MoveFest — Season 1 flyer"
+               animate={{ y: [0, -14, 0] }}
+               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+               className="w-full max-w-md rounded-2xl shadow-xl border border-primary/20"
+             />
+           </motion.div>
+
            <div className="mt-12 grid md:grid-cols-2 gap-8">
              {newsItems.map((item, index) => (
                <motion.div
