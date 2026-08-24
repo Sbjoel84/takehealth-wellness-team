@@ -7,6 +7,8 @@
  import { Calendar, ArrowRight, Tag } from "lucide-react";
  import moveFestFlyer from "@/assets/MoveFest flyer.jpeg";
  
+const moveFestRegistrationUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdnvmfEBlC56pd0ctcYsoRfwFQvLzxjikI-580pd-yUYktmzw/viewform?usp=publish-editor";
+
  const newsItems = [
    {
      date: "October 1, 2026",
@@ -166,9 +168,23 @@
                      </h3>
                      <p className="text-muted-foreground mb-4">{item.excerpt}</p>
                      {item.featured && (
-                       <span className="inline-block bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full">
-                         Featured Event
-                       </span>
+                       <div className="flex flex-wrap items-center gap-3">
+                         <span className="inline-block bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full">
+                           Featured Event
+                         </span>
+                         {item.title === "MoveFest — Season 1" && (
+                           <Button size="sm" asChild>
+                             <a
+                               href={moveFestRegistrationUrl}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                             >
+                               Register for MoveFest
+                               <ArrowRight className="ml-2 w-4 h-4" />
+                             </a>
+                           </Button>
+                         )}
+                       </div>
                      )}
                    </CardContent>
                  </Card>
