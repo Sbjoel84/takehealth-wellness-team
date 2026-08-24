@@ -6,8 +6,7 @@
  import { Link } from "react-router-dom";
  import { Calendar, ArrowRight, Tag } from "lucide-react";
  import moveFestFlyer from "@/assets/MoveFest flyer.jpeg";
- 
-const moveFestRegistrationUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdnvmfEBlC56pd0ctcYsoRfwFQvLzxjikI-580pd-yUYktmzw/viewform?usp=publish-editor";
+import { MOVEFEST_REGISTRATION_URL } from "@/lib/events";
 
  const newsItems = [
    {
@@ -175,7 +174,7 @@ const moveFestRegistrationUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdnvmf
                          {item.title === "MoveFest — Season 1" && (
                            <Button size="sm" asChild>
                              <a
-                               href={moveFestRegistrationUrl}
+                               href={MOVEFEST_REGISTRATION_URL}
                                target="_blank"
                                rel="noopener noreferrer"
                              >

@@ -4,6 +4,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import movefestImage from "@/assets/movefest green.png";
+import { MOVEFEST_REGISTRATION_URL } from "@/lib/events";
 
 const newsEvents = [
   {
@@ -12,6 +13,7 @@ const newsEvents = [
     description: "6:30 AM at the takehealth Facility/Arena. Hosted by the Fitness & Wellness Department.",
     tag: "Featured Event",
     image: movefestImage,
+    registrationUrl: MOVEFEST_REGISTRATION_URL,
   },
   {
     date: "February 2026",
@@ -78,6 +80,14 @@ export function NewsSection() {
                 {event.title}
               </h3>
               <p className="text-muted-foreground text-sm">{event.description}</p>
+              {event.registrationUrl && (
+                <Button size="sm" asChild className="mt-4 group">
+                  <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                    Register Now
+                    <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </a>
+                </Button>
+              )}
               </div>
             </motion.div>
           ))}
