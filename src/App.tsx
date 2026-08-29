@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
+import PortalDashboard from "./pages/portal/PortalDashboard";
 import Contact from "./pages/Contact";
 import Health360 from "./pages/Health360";
 import Login from "./pages/Login";
@@ -27,13 +28,14 @@ import ClientList from "./pages/admin/ClientList";
 import AddClient from "./pages/admin/AddClient";
 import AppointmentList from "./pages/admin/AppointmentList";
 import AddAppointment from "./pages/admin/AddAppointment";
-import OnboardingList from "./pages/admin/OnboardingList";
+import RegistrationList from "./pages/admin/RegistrationList";
 import ServiceProviderManagement from "./pages/admin/ServiceProviderManagement";
 import ClientProgressTracking from "./pages/admin/ClientProgressTracking";
 import CommunicationHub from "./pages/admin/CommunicationHub";
 import DocumentsPage from "./pages/admin/Documents";
 import Settings from "./pages/admin/Settings";
 import PrivateRoute from "./components/auth/PrivateRoute";
+import ClientRoute from "./components/auth/ClientRoute";
 import { AuthProvider } from "./hooks/useAuth";
 
 // Scroll to top on navigation
@@ -72,14 +74,19 @@ const App = () => (
         <Route path="/news" element={<Newsroom />} />
         <Route path="/careers" element={<Careers />} />
         <Route path="/get-started" element={<GetStarted />} />
-        
+
+        {/* Client Portal — protected, clients only */}
+        <Route element={<ClientRoute />}>
+          <Route path="/portal" element={<PortalDashboard />} />
+        </Route>
+
         {/* Admin Dashboard Routes — protected */}
         <Route element={<PrivateRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="clients" element={<ClientList />} />
             <Route path="clients/add" element={<AddClient />} />
-            <Route path="onboarding" element={<OnboardingList />} />
+            <Route path="onboarding" element={<RegistrationList />} />
             <Route path="appointments" element={<AppointmentList />} />
             <Route path="appointments/new" element={<AddAppointment />} />
             <Route path="providers" element={<ServiceProviderManagement />} />

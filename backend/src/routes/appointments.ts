@@ -1,9 +1,33 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { logActivity, type ActivityType } from "../lib/activity.js";
 
 const router = Router();
 router.use(requireAuth);
+
+const fmtWhen = (d: Date) =>
+  d.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+
+// Record an appointment event on the owning client's activity feed (best-effort).
+async function logAppointmentActivity(appointmentId: string, type: ActivityType, message: string) {
+  try {
+    const appt = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { patient: { select: { id: true, userId: true } } },
+    });
+    if (!appt) return;
+    await logActivity({
+      type,
+      message,
+      userId: appt.patient.userId,
+      patientId: appt.patient.id,
+      metadata: { appointmentId },
+    });
+  } catch (err) {
+    console.error("logAppointmentActivity failed:", (err as Error).message);
+  }
+}
 
 router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -84,9 +108,17 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         status: "PENDING",
       },
       include: {
-        patient: { select: { firstName: true, lastName: true, phone: true } },
+        patient: { select: { id: true, userId: true, firstName: true, lastName: true, phone: true } },
         provider: { select: { name: true } },
       },
+    });
+
+    await logActivity({
+      type: "APPOINTMENT_SCHEDULED",
+      message: `Appointment scheduled with ${appointment.provider.name} for ${fmtWhen(appointment.scheduledAt)}.`,
+      userId: appointment.patient.userId,
+      patientId: appointment.patient.id,
+      metadata: { appointmentId: appointment.id },
     });
 
     res.status(201).json(appointment);
@@ -96,7 +128,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-const updateStatus = (status: string, extraData?: Record<string, unknown>) =>
+const updateStatus = (status: string, activity?: { type: ActivityType; message: string }) =>
   async (req: Request, res: Response): Promise<void> => {
     try {
       const appt = await prisma.appointment.findUnique({ where: { id: req.params.id } });
@@ -104,8 +136,12 @@ const updateStatus = (status: string, extraData?: Record<string, unknown>) =>
 
       const updated = await prisma.appointment.update({
         where: { id: req.params.id },
-        data: { status, ...extraData },
+        data: { status },
       });
+
+      if (activity) {
+        await logAppointmentActivity(updated.id, activity.type, activity.message);
+      }
       res.json(updated);
     } catch (err) {
       console.error(err);
@@ -113,14 +149,25 @@ const updateStatus = (status: string, extraData?: Record<string, unknown>) =>
     }
   };
 
-router.patch("/:id/confirm", updateStatus("CONFIRMED"));
-router.patch("/:id/complete", updateStatus("COMPLETED"));
+router.patch("/:id/confirm", updateStatus("CONFIRMED", {
+  type: "APPOINTMENT_CONFIRMED",
+  message: "Your appointment has been confirmed.",
+}));
+router.patch("/:id/complete", updateStatus("COMPLETED", {
+  type: "APPOINTMENT_COMPLETED",
+  message: "Your appointment was marked complete.",
+}));
 router.patch("/:id/cancel", async (req: Request, res: Response): Promise<void> => {
   try {
     const updated = await prisma.appointment.update({
       where: { id: req.params.id },
       data: { status: "CANCELLED", cancelReason: req.body.reason || null },
     });
+    await logAppointmentActivity(
+      updated.id,
+      "APPOINTMENT_CANCELLED",
+      `Your appointment was cancelled${req.body.reason ? `: ${req.body.reason}` : ""}.`,
+    );
     res.json(updated);
   } catch (err) {
     console.error(err);
@@ -135,6 +182,11 @@ router.patch("/:id/reschedule", async (req: Request, res: Response): Promise<voi
       where: { id: req.params.id },
       data: { scheduledAt: new Date(scheduledAt), status: "RESCHEDULED", notes: reason || undefined },
     });
+    await logAppointmentActivity(
+      updated.id,
+      "APPOINTMENT_RESCHEDULED",
+      `Your appointment was moved to ${fmtWhen(updated.scheduledAt)}.`,
+    );
     res.json(updated);
   } catch (err) {
     console.error(err);

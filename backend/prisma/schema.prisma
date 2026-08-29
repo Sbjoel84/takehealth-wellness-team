@@ -91,6 +91,10 @@ model ClientRegistration {
   adminNotes       String?
   reviewedAt       DateTime?
   reviewedBy       String?
+  // Chosen at sign-up, consumed + cleared when the login account is created on approval.
+  password         String?
+  // Back-link to the Patient created when this registration is approved.
+  patientId        String?   @unique
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -117,6 +121,11 @@ model Patient {
   serviceType           String?
   planId                String?
   status                String        @default("ACTIVE")
+  // Instructor / service provider assigned to this client by an admin.
+  assignedProviderId    String?
+  assignedProvider      HealthServiceProvider? @relation("AssignedClients", fields: [assignedProviderId], references: [id])
+  // Originating registration (set on approval).
+  registrationId        String?       @unique
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   appointments          Appointment[]
@@ -132,10 +141,11 @@ model HealthServiceProvider {
   type         String
   specialty    String?
   location     String?
-  status       String        @default("ACTIVE") // ACTIVE | INACTIVE | PENDING
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  appointments Appointment[]
+  status          String     @default("ACTIVE") // ACTIVE | INACTIVE | PENDING
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  appointments    Appointment[]
+  assignedClients Patient[]  @relation("AssignedClients")
 
   @@map("health_service_provider")
 }
@@ -159,4 +169,24 @@ model Appointment {
   updatedAt    DateTime              @updatedAt
 
   @@map("appointment")
+}
+
+// ─── Client activity feed ────────────────────────────────────────────────────
+// One row per notable event in a client's journey. Surfaced in the client portal
+// timeline. Written best-effort — a logging failure never blocks the main action.
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?  // the client User this activity belongs to
+  patientId String?
+  type      String   // REGISTRATION_SUBMITTED | REGISTRATION_APPROVED | PROVIDER_ASSIGNED
+                      // | APPOINTMENT_SCHEDULED | APPOINTMENT_CONFIRMED | APPOINTMENT_RESCHEDULED
+                      // | APPOINTMENT_CANCELLED | APPOINTMENT_COMPLETED
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([patientId])
+  @@map("activity_log")
 }

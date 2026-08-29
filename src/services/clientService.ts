@@ -34,6 +34,10 @@ export const clientService = {
     return apiRequest(`/api/patients/${id}`, "PATCH", data);
   },
 
+  async assignProvider(id: string, providerId: string | null) {
+    return apiRequest(`/api/patients/${id}/assign-provider`, "PATCH", { providerId });
+  },
+
   async deleteClient(id: string) {
     return apiRequest(`/api/patients/${id}`, "DELETE");
   },

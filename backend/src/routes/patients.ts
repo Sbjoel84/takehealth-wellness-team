@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../db.js";
-import { requireAuth } from "../middleware/requireAuth.js";
+import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
+import { logActivity } from "../lib/activity.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -24,6 +25,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     const [patients, total] = await Promise.all([
       prisma.patient.findMany({
         where,
+        include: { assignedProvider: { select: { id: true, name: true, type: true } } },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
@@ -92,6 +94,43 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     });
 
     res.status(201).json(patient);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Admin — assign (or clear) the instructor / service provider for a client.
+router.patch("/:id/assign-provider", requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { providerId } = req.body as { providerId?: string | null };
+
+    const patient = await prisma.patient.findUnique({ where: { id: req.params.id } });
+    if (!patient) { res.status(404).json({ message: "Patient not found" }); return; }
+
+    let provider = null;
+    if (providerId) {
+      provider = await prisma.healthServiceProvider.findUnique({ where: { id: providerId } });
+      if (!provider) { res.status(404).json({ message: "Provider not found" }); return; }
+    }
+
+    const updated = await prisma.patient.update({
+      where: { id: patient.id },
+      data: { assignedProviderId: providerId || null },
+      include: { assignedProvider: true },
+    });
+
+    if (provider) {
+      await logActivity({
+        type: "PROVIDER_ASSIGNED",
+        message: `You've been matched with ${provider.name}${provider.specialty ? ` (${provider.specialty})` : ""}.`,
+        userId: patient.userId,
+        patientId: patient.id,
+        metadata: { providerId: provider.id },
+      });
+    }
+
+    res.json(updated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

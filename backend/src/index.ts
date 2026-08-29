@@ -8,6 +8,7 @@ import patientsRouter from "./routes/patients.js";
 import appointmentsRouter from "./routes/appointments.js";
 import providersRouter from "./routes/providers.js";
 import dashboardRouter from "./routes/dashboard.js";
+import meRouter from "./routes/me.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +47,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 // Routes
 app.use("/api/registrations", registrationsRouter);
+app.use("/api/me", meRouter);
 app.use("/api/patients", patientsRouter);
 app.use("/api/appointments", appointmentsRouter);
 app.use("/api/health-service-providers", providersRouter);

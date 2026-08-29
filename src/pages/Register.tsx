@@ -87,8 +87,9 @@ const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const urlService = searchParams.get("service") || "";
-  const urlPlan    = searchParams.get("plan")    || "";
+  const urlService   = searchParams.get("service")   || "";
+  const urlPlan      = searchParams.get("plan")      || "";
+  const urlTreatment = searchParams.get("treatment") || "";
   const planInfo   = urlService && urlPlan ? PLAN_PRICES[urlService]?.[urlPlan] : null;
 
   const [isLoading, setIsLoading]   = useState(false);
@@ -145,7 +146,8 @@ const Register = () => {
     }
     setIsLoading(true);
 
-    const selectedService = SERVICE_LABELS[urlService] || formData.serviceType || "—";
+    const baseService     = SERVICE_LABELS[urlService] || formData.serviceType || "—";
+    const selectedService = urlTreatment ? `${baseService} — ${urlTreatment}` : baseService;
     const selectedPlan    = planInfo ? `${planInfo.name} — ${planInfo.price} ${planInfo.period}`.trim() : "—";
 
     const payload = {
@@ -183,10 +185,14 @@ const Register = () => {
           address:         formData.address          || null,
           emergencyContact:formData.emergencyContact || null,
           emergencyPhone:  formData.emergencyPhone   || null,
-          serviceType:     formData.serviceType      || null,
+          serviceType:     urlTreatment
+                             ? `${SERVICE_LABELS[urlService] || formData.serviceType || urlService} — ${urlTreatment}`
+                             : (formData.serviceType || null),
           planId:          urlPlan                   || null,
           allergies:       formData.allergies        || null,
           medicalHistory:  formData.medicalHistory   || null,
+          // Used to create the client's login account when an admin approves.
+          password:        formData.password         || undefined,
         }),
       });
 
@@ -251,6 +257,17 @@ const Register = () => {
                 <p className="text-2xl font-bold text-primary">{planInfo.price}</p>
                 {planInfo.period && <p className="text-sm text-muted-foreground">{planInfo.period}</p>}
               </div>
+            </motion.div>
+          )}
+
+          {/* Selected Treatment Banner */}
+          {urlTreatment && !planInfo && step < 4 && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
+              <p className="text-sm text-muted-foreground">Booking treatment</p>
+              <p className="font-semibold text-foreground">
+                {(selectedServiceLabel ? `${selectedServiceLabel} — ` : "")}{urlTreatment}
+              </p>
             </motion.div>
           )}
 
@@ -426,7 +443,9 @@ const Register = () => {
                           ["Full Name",    formData.fullName],
                           ["Email",        formData.email],
                           ["Phone",        formData.phone],
-                          ["Service",      SERVICE_LABELS[urlService] || formData.serviceType],
+                          ["Service",      urlTreatment
+                                             ? `${SERVICE_LABELS[urlService] || formData.serviceType || ""} — ${urlTreatment}`.replace(/^ — /, "")
+                                             : (SERVICE_LABELS[urlService] || formData.serviceType)],
                           ["Plan",         planInfo ? `${planInfo.name} — ${planInfo.price} ${planInfo.period}` : "—"],
                           ["Date of Birth",formData.dateOfBirth || "—"],
                           ["Gender",       formData.gender || "—"],
@@ -486,10 +505,12 @@ const Register = () => {
                       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                         <CheckCircle2 className="w-10 h-10 text-green-600" />
                       </div>
-                      <h2 className="font-serif text-2xl font-bold">Registration Successful!</h2>
+                      <h2 className="font-serif text-2xl font-bold">Registration Received!</h2>
                       <p className="text-muted-foreground">
-                        Welcome, <strong>{formData.fullName}</strong>! Your account has been created.
-                        Complete your payment below to activate your membership.
+                        Thank you, <strong>{formData.fullName}</strong>. Our team will review your
+                        application and activate your account. You'll be able to sign in with the
+                        email and password you just chose once it's approved. Complete your payment
+                        below to speed up activation.
                       </p>
                       {registeredEmail && (
                         <Badge variant="outline" className="text-xs">{registeredEmail}</Badge>

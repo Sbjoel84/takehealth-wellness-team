@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "../services/api";
+import { authService } from "@/services/authService";
 import { useAuth } from "@/hooks/useAuth";
 import loginImage from "@/assets/spa.png";
 
@@ -21,7 +22,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/admin";
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -37,8 +38,13 @@ const Login = () => {
     try {
       await login({ email: formData.email, password: formData.password });
 
+      const role = authService.getStoredUser<{ role?: string }>()?.role;
+      const home = role === "ADMIN" ? "/admin" : "/portal";
+      // Only honour `from` when it belongs to the area this role can actually use.
+      const dest = from && (role === "ADMIN") === from.startsWith("/admin") ? from : home;
+
       toast({ title: "Login Successful", description: "Welcome back!" });
-      navigate(from, { replace: true });
+      navigate(dest, { replace: true });
     } catch (error) {
       const message =
         error instanceof ApiError

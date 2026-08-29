@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -17,7 +18,19 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, isAdmin, logout } = useAuth();
   const isHomePage = location.pathname === "/";
+  const dashboardHref = isAdmin ? "/admin" : "/portal";
+
+  const handleSignOut = async () => {
+    setIsOpen(false);
+    try {
+      await logout();
+    } finally {
+      navigate("/");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -119,19 +132,39 @@ export function Navbar() {
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              asChild
-              className={`${getTextColorClass()} hover:bg-gray-100 hover:text-gray-900`}
-            >
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button
-              asChild
-              className="bg-[#7FB25A] hover:bg-[#6a9f4b] text-white border-0"
-            >
-              <Link to="/get-started">Get Started</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button
+                  asChild
+                  className="bg-[#7FB25A] hover:bg-[#6a9f4b] text-white border-0"
+                >
+                  <Link to={dashboardHref}>My Dashboard</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className={`${getTextColorClass()} hover:bg-gray-100 hover:text-gray-900`}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  asChild
+                  className={`${getTextColorClass()} hover:bg-gray-100 hover:text-gray-900`}
+                >
+                  <Link to="/login">Sign In</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="bg-[#7FB25A] hover:bg-[#6a9f4b] text-white border-0"
+                >
+                  <Link to="/get-started">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -170,23 +203,45 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="pt-4 space-y-3 border-t border-gray-200">
-                <Button
-                  variant="outline"
-                  className="w-full border-gray-300 text-gray-800 hover:bg-gray-100"
-                  asChild
-                >
-                  <Link to="/login" onClick={() => setIsOpen(false)}>
-                    Sign In
-                  </Link>
-                </Button>
-                <Button
-                  className="w-full bg-[#7FB25A] hover:bg-[#6a9f4b] text-white"
-                  asChild
-                >
-                  <Link to="/get-started" onClick={() => setIsOpen(false)}>
-                    Get Started
-                  </Link>
-                </Button>
+                {isAuthenticated ? (
+                  <>
+                    <Button
+                      className="w-full bg-[#7FB25A] hover:bg-[#6a9f4b] text-white"
+                      asChild
+                    >
+                      <Link to={dashboardHref} onClick={() => setIsOpen(false)}>
+                        My Dashboard
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full border-gray-300 text-gray-800 hover:bg-gray-100"
+                      onClick={handleSignOut}
+                    >
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full border-gray-300 text-gray-800 hover:bg-gray-100"
+                      asChild
+                    >
+                      <Link to="/login" onClick={() => setIsOpen(false)}>
+                        Sign In
+                      </Link>
+                    </Button>
+                    <Button
+                      className="w-full bg-[#7FB25A] hover:bg-[#6a9f4b] text-white"
+                      asChild
+                    >
+                      <Link to="/get-started" onClick={() => setIsOpen(false)}>
+                        Get Started
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

@@ -28,6 +28,19 @@ interface Plan {
   ctaLink?: string;
 }
 
+interface Treatment {
+  name: string;
+  description: string;
+  benefits?: string;
+  points?: string[];
+}
+
+interface TreatmentGroup {
+  heading: string;
+  intro?: string;
+  items: Treatment[];
+}
+
 interface ServiceData {
   id: string;
   title: string;
@@ -36,6 +49,7 @@ interface ServiceData {
   image: string;
   features: string[];
   plans: Plan[];
+  treatmentGroups?: TreatmentGroup[];
 }
 
 const servicesData: ServiceData[] = [
@@ -153,6 +167,59 @@ const servicesData: ServiceData[] = [
         ],
         ctaLink: "/register?service=spa&plan=elite"
       }
+    ],
+    treatmentGroups: [
+      {
+        heading: "Spa & Massage Therapy",
+        intro: "Individual treatments you can book on their own or as part of a membership.",
+        items: [
+          {
+            name: "Swedish Massage",
+            description: "A gentle, full-body massage focused on relaxation and stress relief.",
+            benefits: "Improves circulation, reduces stress, enhances sleep"
+          },
+          {
+            name: "Deep Tissue Massage",
+            description: "Targets deeper muscle layers to relieve chronic pain and tension.",
+            benefits: "Eases muscle stiffness, improves mobility, supports injury prevention"
+          },
+          {
+            name: "Sports Massage",
+            description: "Designed for active individuals and athletes before or after training.",
+            benefits: "Faster recovery, reduced muscle soreness, improved performance"
+          },
+          {
+            name: "Hot Stone Massage",
+            description: "Uses heated stones to relax muscles and improve energy flow.",
+            benefits: "Deep relaxation, stress relief, improved circulation"
+          },
+          {
+            name: "Aromatherapy Massage",
+            description: "Combines essential oils with massage techniques for emotional and physical balance.",
+            benefits: "Reduces anxiety, improves mood, boosts immunity"
+          }
+        ]
+      },
+      {
+        heading: "Spa & Body Care",
+        items: [
+          {
+            name: "Body Scrub & Polish",
+            description: "Exfoliating treatment to remove dead skin and restore smoothness.",
+            benefits: "Improves skin texture, enhances circulation"
+          },
+          {
+            name: "Body Wrap (Detox / Hydrating)",
+            description: "Nourishing wrap to detoxify or deeply moisturise the skin.",
+            benefits: "Skin rejuvenation, relaxation, detox support"
+          },
+          {
+            name: "Signature Relaxation Package",
+            description: "A combination of massage, body scrub, and aromatherapy.",
+            benefits: "Full-body rejuvenation, stress reset"
+          }
+        ]
+      }
     ]
   },
   {
@@ -209,6 +276,50 @@ const servicesData: ServiceData[] = [
           "VIP priority access and concierge booking"
         ],
         ctaLink: "/register?service=skincare&plan=elite"
+      }
+    ],
+    treatmentGroups: [
+      {
+        heading: "Skin Care Treatments",
+        intro: "Recreated as bookable treatments, tailored to your skin type and goals.",
+        items: [
+          {
+            name: "Professional Facials",
+            description: "Customised facials designed to cleanse, hydrate, repair, and protect the skin.",
+            points: [
+              "Express Facials",
+              "Signature Facials",
+              "Advanced / Anti-Ageing Facials",
+              "Acne and congestion"
+            ]
+          },
+          {
+            name: "Chemical Peels",
+            description: "Advanced exfoliation treatments to renew skin texture and tone.",
+            points: [
+              "Mild to medical-grade peels",
+              "Treatment for hyperpigmentation, acne scars, fine lines, and dull skin"
+            ]
+          },
+          {
+            name: "Corrective & Advanced Treatments",
+            description: "Targeted solutions for long-term skin health.",
+            points: [
+              "Anti-ageing therapies",
+              "Scar and pigmentation management",
+              "Skin tightening and rejuvenation protocols"
+            ]
+          },
+          {
+            name: "Lifestyle & Skin Health Coaching",
+            description: "Because great skin is built daily.",
+            points: [
+              "Skincare routines tailored to your lifestyle",
+              "Nutrition and hydration guidance for skin health",
+              "Stress management and sleep optimisation tips"
+            ]
+          }
+        ]
       }
     ]
   },
@@ -721,6 +832,68 @@ function ServiceCard({ service, index }: ServiceCardProps) {
               </Button>
             )}
           </div>
+
+          {service.treatmentGroups && service.treatmentGroups.length > 0 && (
+            <div className="border-t pt-6 mt-6">
+              <h4 className="text-2xl font-bold mb-1">Treatment Menu</h4>
+              <p className="text-muted-foreground text-sm mb-6">
+                Individual treatments available to book. Prices are confirmed on consultation.
+              </p>
+
+              {service.treatmentGroups.map((group) => (
+                <div key={group.heading} className="mb-8 last:mb-0">
+                  <h5 className="font-semibold text-lg text-foreground mb-1">{group.heading}</h5>
+                  {group.intro && (
+                    <p className="text-muted-foreground text-sm mb-4">{group.intro}</p>
+                  )}
+
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {group.items.map((item) => (
+                      <div
+                        key={item.name}
+                        className="flex flex-col rounded-lg border bg-card p-4 hover:shadow-md transition-shadow"
+                      >
+                        <h6 className="font-semibold text-foreground mb-1">{item.name}</h6>
+                        <p className="text-sm text-muted-foreground mb-3">{item.description}</p>
+
+                        {item.benefits && (
+                          <p className="text-xs text-muted-foreground mb-3">
+                            <span className="font-medium text-foreground">Benefits: </span>
+                            {item.benefits}
+                          </p>
+                        )}
+
+                        {item.points && item.points.length > 0 && (
+                          <ul className="text-xs text-muted-foreground space-y-1 mb-3">
+                            {item.points.map((point) => (
+                              <li key={point} className="flex items-start gap-1.5">
+                                <Check className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="mt-auto w-full"
+                        >
+                          <Link
+                            to={`/register?service=${service.id}&treatment=${encodeURIComponent(item.name)}`}
+                            aria-label={`Book ${item.name}`}
+                          >
+                            Book Now
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -733,8 +906,13 @@ function Services() {
 
   const filteredServices = servicesData.filter((service) => {
     const matchesCategory = selectedCategory === "all" || service.id === selectedCategory;
-    const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.shortDescription.toLowerCase().includes(searchTerm.toLowerCase());
+    const query = searchTerm.toLowerCase();
+    const matchesSearch = service.title.toLowerCase().includes(query) ||
+                         service.shortDescription.toLowerCase().includes(query) ||
+                         (service.treatmentGroups?.some((group) =>
+                           group.heading.toLowerCase().includes(query) ||
+                           group.items.some((item) => item.name.toLowerCase().includes(query))
+                         ) ?? false);
     return matchesCategory && matchesSearch;
   });
 

@@ -28,7 +28,7 @@ interface SidebarProps {
 const menuItems = [
   { path: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/admin/clients", icon: Users, label: "Clients" },
-  { path: "/admin/onboarding", icon: FileStack, label: "Onboarding" },
+  { path: "/admin/onboarding", icon: FileStack, label: "Registrations" },
   { path: "/admin/appointments", icon: Calendar, label: "Appointments" },
   { path: "/admin/providers", icon: Stethoscope, label: "Providers" },
   { path: "/admin/progress", icon: Activity, label: "Progress" },

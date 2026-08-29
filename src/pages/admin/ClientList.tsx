@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2,
-  FileText, Phone, Calendar, ChevronLeft, ChevronRight, AlertCircle,
+  FileText, Phone, Calendar, ChevronLeft, ChevronRight, AlertCircle, Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { clientService, PatientPayload } from "../../services/clientService";
+import { providersApi } from "@/lib/api-client";
 import { ApiError } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,6 +41,8 @@ interface Client {
   medicalHistory: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  assignedProviderId: string;
+  assignedProviderName: string;
   createdAt: string;
 }
 
@@ -72,7 +75,49 @@ const ClientList = () => {
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
+  // Assign-instructor state
+  const [assignClient, setAssignClient] = useState<Client | null>(null);
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [providers, setProviders] = useState<{ id: string; name: string; type: string }[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("");
+
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    providersApi
+      .getAll({ limit: 100 })
+      .then((res) => setProviders((res.data || []).map((p) => ({ id: p.id, name: p.name, type: p.type }))))
+      .catch(() => setProviders([]));
+  }, []);
+
+  const openAssign = (client: Client) => {
+    setAssignClient(client);
+    setSelectedProviderId(client.assignedProviderId || "");
+    setIsAssignOpen(true);
+  };
+
+  const submitAssign = async () => {
+    if (!assignClient) return;
+    setActionLoading(assignClient.id);
+    try {
+      await clientService.assignProvider(assignClient.id, selectedProviderId || null);
+      const providerName = providers.find((p) => p.id === selectedProviderId)?.name || "";
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === assignClient.id
+            ? { ...c, assignedProviderId: selectedProviderId, assignedProviderName: providerName }
+            : c
+        )
+      );
+      toast({ title: selectedProviderId ? "Instructor assigned" : "Instructor unassigned" });
+      setIsAssignOpen(false);
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Failed to assign instructor";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -97,6 +142,9 @@ const ClientList = () => {
           medicalHistory: p.medicalHistory || "",
           emergencyContactName: p.emergencyContactName || "",
           emergencyContactPhone: p.emergencyContactPhone || "",
+          assignedProviderId: p.assignedProviderId || "",
+          assignedProviderName:
+            (p.assignedProvider as unknown as { name?: string } | null)?.name || "",
           createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
         }));
 
@@ -274,6 +322,10 @@ const ClientList = () => {
                               <Phone className="w-3 h-3" />
                               {client.phone}
                             </span>
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Stethoscope className="w-3 h-3" />
+                              {client.assignedProviderName || "No instructor"}
+                            </span>
                           </div>
                         </div>
                       </TableCell>
@@ -299,6 +351,10 @@ const ClientList = () => {
                             <DropdownMenuItem onClick={() => openEdit(client)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Edit Client
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openAssign(client)}>
+                              <Stethoscope className="w-4 h-4 mr-2" />
+                              Assign Instructor
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                               <FileText className="w-4 h-4 mr-2" />
@@ -448,6 +504,47 @@ const ClientList = () => {
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={submitDelete} disabled={actionLoading !== null}>
               {actionLoading ? "Deactivating..." : "Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Instructor Dialog */}
+      <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Instructor — {assignClient?.fullName}</DialogTitle>
+            <DialogDescription>
+              Choose the service provider who will work with this client. They will see this
+              on their portal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>Instructor / Provider</Label>
+            <Select
+              value={selectedProviderId || "none"}
+              onValueChange={(v) => setSelectedProviderId(v === "none" ? "" : v)}
+            >
+              <SelectTrigger><SelectValue placeholder="Select a provider" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— No instructor —</SelectItem>
+                {providers.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} ({p.type})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {providers.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No providers found. Add one under Providers first.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignOpen(false)}>Cancel</Button>
+            <Button onClick={submitAssign} disabled={actionLoading !== null}>
+              {actionLoading ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
