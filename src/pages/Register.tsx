@@ -172,29 +172,39 @@ const Register = () => {
         (import.meta.env.VITE_API_URL as string | undefined) ||
         (import.meta.env.DEV ? "" : "https://take-health-web-api.onrender.com");
 
-      const apiRes = await fetch(`${BASE_URL}/api/registrations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName:        formData.fullName,
-          email:           formData.email,
-          phone:           formData.phone,
-          dateOfBirth:     formData.dateOfBirth     || null,
-          gender:          formData.gender           || null,
-          maritalStatus:   formData.maritalStatus    || null,
-          address:         formData.address          || null,
-          emergencyContact:formData.emergencyContact || null,
-          emergencyPhone:  formData.emergencyPhone   || null,
-          serviceType:     urlTreatment
-                             ? `${SERVICE_LABELS[urlService] || formData.serviceType || urlService} — ${urlTreatment}`
-                             : (formData.serviceType || null),
-          planId:          urlPlan                   || null,
-          allergies:       formData.allergies        || null,
-          medicalHistory:  formData.medicalHistory   || null,
-          // Used to create the client's login account when an admin approves.
-          password:        formData.password         || undefined,
-        }),
-      });
+      let apiRes: Response;
+      try {
+        apiRes = await fetch(`${BASE_URL}/api/registrations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName:        formData.fullName,
+            email:           formData.email,
+            phone:           formData.phone,
+            dateOfBirth:     formData.dateOfBirth     || null,
+            gender:          formData.gender           || null,
+            maritalStatus:   formData.maritalStatus    || null,
+            address:         formData.address          || null,
+            emergencyContact:formData.emergencyContact || null,
+            emergencyPhone:  formData.emergencyPhone   || null,
+            serviceType:     urlTreatment
+                               ? `${SERVICE_LABELS[urlService] || formData.serviceType || urlService} — ${urlTreatment}`
+                               : (formData.serviceType || null),
+            planId:          urlPlan                   || null,
+            allergies:       formData.allergies        || null,
+            medicalHistory:  formData.medicalHistory   || null,
+            // Used to create the client's login account when an admin approves.
+            password:        formData.password         || undefined,
+          }),
+        });
+      } catch {
+        // fetch() only rejects on network-level failures: server unreachable,
+        // DNS failure, or the browser blocking the response (CORS).
+        throw new Error(
+          "Couldn't reach the server. Please check your connection and try again — " +
+            `if this keeps happening, contact us at ${CONTACT.email} or ${CONTACT.phone}.`
+        );
+      }
 
       if (!apiRes.ok) {
         const json = await apiRes.json().catch(() => ({}));

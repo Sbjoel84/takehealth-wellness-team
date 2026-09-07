@@ -21,14 +21,29 @@ const allowedOrigins = [
   "https://take-health-wellness.vercel.app",
 ].filter(Boolean) as string[];
 
+// Hosts whose subdomains are always allowed, so a preview/prod URL change or a
+// missing FRONTEND_URL env var doesn't silently break the browser with a CORS
+// failure ("Failed to fetch"). Covers Vercel deployments and Render.
+const allowedOriginSuffixes = [".vercel.app", ".onrender.com"];
+
+const isOriginAllowed = (origin: string) => {
+  if (allowedOrigins.some((o) => origin.startsWith(o))) return true;
+  try {
+    const { hostname } = new URL(origin);
+    return allowedOriginSuffixes.some(
+      (suffix) => hostname === suffix.slice(1) || hostname.endsWith(suffix)
+    );
+  } catch {
+    return false;
+  }
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, Render health checks)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.some((o) => origin.startsWith(o)) || origin.endsWith(".onrender.com")) {
-        return callback(null, true);
-      }
+      if (isOriginAllowed(origin)) return callback(null, true);
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
