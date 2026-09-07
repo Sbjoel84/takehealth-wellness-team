@@ -46,60 +46,59 @@ export function Navbar() {
     return location.pathname.startsWith(href);
   };
 
-  // Dynamic classes based on scroll and page
+  // Dynamic classes based on scroll and page.
+  // When scrolled, the bar goes transparent (with a light blur) while the
+  // text stays dark and gains a subtle shadow so it remains readable.
   const getNavBgClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "bg-white";
+    if (isScrolled) {
+      return "bg-transparent backdrop-blur-md";
     }
     return "bg-white";
   };
 
   const getTextColorClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "text-gray-800";
+    if (isScrolled) {
+      return "text-gray-900 font-semibold [text-shadow:0_1px_3px_rgba(255,255,255,0.9)]";
     }
     return "text-gray-800";
   };
 
   const getLinkHoverClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "hover:text-gray-900 hover:bg-gray-100";
+    if (isScrolled) {
+      return "hover:text-gray-900 hover:bg-white/40";
     }
     return "hover:text-gray-900 hover:bg-gray-100";
   };
 
   const getActiveLinkClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "bg-gray-200 text-gray-900";
+    if (isScrolled) {
+      return "bg-white/50 text-gray-900";
     }
     return "bg-gray-200 text-gray-900";
   };
 
   const getMobileMenuBgClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "bg-white";
+    if (isScrolled) {
+      return "bg-white/80 backdrop-blur-md";
     }
     return "bg-white";
   };
 
   const getMobileTextColorClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "text-gray-800";
+    if (isScrolled) {
+      return "text-gray-900 font-semibold";
     }
     return "text-gray-800";
   };
 
   const getMobileLinkHoverClass = () => {
-    if (isHomePage && !isScrolled) {
-      return "hover:text-gray-900";
-    }
     return "hover:text-gray-900";
   };
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${getNavBgClass()} ${
-        isScrolled ? "shadow-lg shadow-emerald-900/20" : ""
+        isScrolled ? "" : "shadow-lg shadow-emerald-900/20"
       }`}
     >
       <div className="container mx-auto px-4 md:px-8">
@@ -109,7 +108,7 @@ export function Navbar() {
             <img
               src="/logo.svg"
               alt="takehealth Logo"
-              className="h-12 w-auto object-contain"
+              className="h-12 w-auto object-contain rounded-xl"
             />
           </Link>
 

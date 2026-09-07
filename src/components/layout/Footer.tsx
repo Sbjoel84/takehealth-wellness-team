@@ -64,7 +64,7 @@ export function Footer() {
               <img 
                 src="/logo.svg" 
                 alt="takehealth Logo" 
-                className="h-14 object-contain"
+                className="h-14 object-contain rounded-xl"
               />
             </Link>
             <p className="text-white/80 mb-4 max-w-sm">

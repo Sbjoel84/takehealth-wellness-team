@@ -69,7 +69,7 @@ const Login = () => {
             <img
               src="/logo.svg"
               alt="takehealth Logo"
-              className="h-20 object-contain"
+              className="h-20 object-contain rounded-xl"
             />
           </Link>
 

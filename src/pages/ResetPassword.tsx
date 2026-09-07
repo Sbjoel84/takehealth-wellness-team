@@ -83,7 +83,7 @@ const ResetPassword = () => {
           className="w-full max-w-md"
         >
           <Link to="/" className="flex items-center gap-2 mb-8">
-            <img src="/logo.svg" alt="takehealth Logo" className="h-20 object-contain" />
+            <img src="/logo.svg" alt="takehealth Logo" className="h-20 object-contain rounded-xl" />
           </Link>
 
           <h1 className="font-serif text-3xl font-bold text-foreground mb-2">Set New Password</h1>

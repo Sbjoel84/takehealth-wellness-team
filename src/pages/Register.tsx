@@ -241,7 +241,7 @@ const Register = () => {
         <div className="container mx-auto px-4 md:px-8 max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
-              <img src="/logo.svg" alt="takehealth Logo" className="h-24 md:h-28 object-contain" />
+              <img src="/logo.svg" alt="takehealth Logo" className="h-24 md:h-28 object-contain rounded-xl" />
             </Link>
           </motion.div>
 

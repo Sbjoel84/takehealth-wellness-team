@@ -92,7 +92,7 @@ const AdminSidebar = ({ open, setOpen }: SidebarProps) => {
             <img
               src="/logo.svg"
               alt="TakeHealth Logo"
-              className="h-14 w-auto object-contain"
+              className="h-14 w-auto object-contain rounded-xl"
             />
           </Link>
           <Button
