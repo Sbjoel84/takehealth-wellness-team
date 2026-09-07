@@ -1,0 +1,54 @@
+# Render Blueprint for the TakeHealth backend API.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# To use: in the Render dashboard choose "New +" -> "Blueprint", point it at
+# this repo, and Render reads this file. Existing services can be brought under
+# the blueprint from the service's Settings page.
+
+services:
+  - type: web
+    name: take-health-web-api
+    runtime: node
+    plan: free
+    # The backend lives in a subfolder; everything below runs from there.
+    rootDir: backend
+    buildCommand: npm install && npm run db:generate && npm run build
+    # No prisma/migrations folder exists yet, so sync the schema directly with
+    # `db:push` instead of `migrate deploy`. It is a no-op when already in sync.
+    startCommand: npm run db:push && npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      # The public URL of this service, used by better-auth.
+      - key: BETTER_AUTH_URL
+        value: https://take-health-web-api.onrender.com
+      # The exact origin of the deployed frontend, no trailing slash, for CORS.
+      # e.g. https://take-health-wellness.vercel.app
+      - key: FRONTEND_URL
+        sync: false
+      # Postgres connection string. Set this manually in the dashboard, or
+      # uncomment the `databases` block below to have Render provision one.
+      - key: DATABASE_URL
+        sync: false
+      # Generate with: openssl rand -base64 32
+      - key: BETTER_AUTH_SECRET
+        sync: false
+
+# To let Render create and manage the database, uncomment this block and change
+# the DATABASE_URL env var above to:
+#   - key: DATABASE_URL
+#     fromDatabase:
+#       name: take-health-db
+#       property: connectionString
+#
+# databases:
+#   - name: take-health-db
+#     plan: free
+#     databaseName: takehealth
+#     user: takehealth
