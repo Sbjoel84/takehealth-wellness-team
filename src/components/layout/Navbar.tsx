@@ -47,52 +47,53 @@ export function Navbar() {
   };
 
   // Dynamic classes based on scroll and page.
-  // When scrolled, the bar goes transparent (with a light blur) while the
-  // text stays dark and gains a subtle shadow so it remains readable.
+  // When scrolled, the bar becomes a translucent army-green with a light blur;
+  // text flips to white with a soft dark shadow so it stays readable against the
+  // colored, semi-transparent background.
   const getNavBgClass = () => {
     if (isScrolled) {
-      return "bg-transparent backdrop-blur-md";
+      return "bg-[#4b5320]/70 backdrop-blur-md";
     }
     return "bg-white";
   };
 
   const getTextColorClass = () => {
     if (isScrolled) {
-      return "text-gray-900 font-semibold [text-shadow:0_1px_3px_rgba(255,255,255,0.9)]";
+      return "text-white font-semibold [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]";
     }
     return "text-gray-800";
   };
 
   const getLinkHoverClass = () => {
     if (isScrolled) {
-      return "hover:text-gray-900 hover:bg-white/40";
+      return "hover:text-white hover:bg-white/20";
     }
     return "hover:text-gray-900 hover:bg-gray-100";
   };
 
   const getActiveLinkClass = () => {
     if (isScrolled) {
-      return "bg-white/50 text-gray-900";
+      return "bg-white/25 text-white";
     }
     return "bg-gray-200 text-gray-900";
   };
 
   const getMobileMenuBgClass = () => {
     if (isScrolled) {
-      return "bg-white/80 backdrop-blur-md";
+      return "bg-[#4b5320]/90 backdrop-blur-md";
     }
     return "bg-white";
   };
 
   const getMobileTextColorClass = () => {
     if (isScrolled) {
-      return "text-gray-900 font-semibold";
+      return "text-white font-semibold";
     }
     return "text-gray-800";
   };
 
   const getMobileLinkHoverClass = () => {
-    return "hover:text-gray-900";
+    return isScrolled ? "hover:text-white" : "hover:text-gray-900";
   };
 
   return (
