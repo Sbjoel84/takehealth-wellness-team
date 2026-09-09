@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MOVEFEST_REGISTRATION_URL } from "@/lib/events";
+import { MoveFestDetails } from "@/components/home/MoveFestDetails";
 import moveFestFlyer from "@/assets/MoveFest flyer.jpeg";
 
 // MoveFest — Season 1 kick-off: October 1, 2026, 6:30 AM (WAT, UTC+1).
@@ -111,6 +112,8 @@ export function MoveFestBanner() {
               </Button>
             </div>
           </div>
+
+          <MoveFestDetails className="mt-10 border-t border-primary/15 pt-8" />
         </motion.div>
       </div>
     </section>

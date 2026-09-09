@@ -7,6 +7,7 @@
  import { Calendar, ArrowRight, Tag } from "lucide-react";
  import moveFestFlyer from "@/assets/MoveFest flyer.jpeg";
 import { MOVEFEST_REGISTRATION_URL } from "@/lib/events";
+import { MoveFestDetails } from "@/components/home/MoveFestDetails";
 
  const newsItems = [
    {
@@ -139,6 +140,15 @@ import { MOVEFEST_REGISTRATION_URL } from "@/lib/events";
                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                className="w-full max-w-md rounded-2xl shadow-xl border border-primary/20"
              />
+           </motion.div>
+
+           <motion.div
+             initial={{ opacity: 0, y: 20 }}
+             whileInView={{ opacity: 1, y: 0 }}
+             viewport={{ once: true }}
+             className="mt-12 max-w-3xl mx-auto bg-card rounded-3xl p-8 md:p-10 shadow-sm border border-primary/20"
+           >
+             <MoveFestDetails />
            </motion.div>
 
            <div className="mt-12 grid md:grid-cols-2 gap-8">
