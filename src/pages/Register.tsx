@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { ApiError, apiRequest } from "@/services/api";
 
 const FORMSPREE_URL = import.meta.env.VITE_FORMSPREE_URL as string | undefined;
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -126,6 +127,10 @@ const Register = () => {
         toast({ title: "Please fill in all required fields", variant: "destructive" });
         return;
       }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        toast({ title: "Please enter a valid email address", variant: "destructive" });
+        return;
+      }
       if (formData.password.length < 8) {
         toast({ title: "Password must be at least 8 characters", variant: "destructive" });
         return;
@@ -168,50 +173,31 @@ const Register = () => {
 
     try {
       // Save to backend database (primary)
-      const BASE_URL =
-        (import.meta.env.VITE_API_URL as string | undefined) ||
-        (import.meta.env.DEV ? "" : "https://take-health-web-api.onrender.com");
-
-      let apiRes: Response;
       try {
-        apiRes = await fetch(`${BASE_URL}/api/registrations`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fullName:        formData.fullName,
-            email:           formData.email,
-            phone:           formData.phone,
-            dateOfBirth:     formData.dateOfBirth     || null,
-            gender:          formData.gender           || null,
-            maritalStatus:   formData.maritalStatus    || null,
-            address:         formData.address          || null,
-            emergencyContact:formData.emergencyContact || null,
-            emergencyPhone:  formData.emergencyPhone   || null,
-            serviceType:     urlTreatment
-                               ? `${SERVICE_LABELS[urlService] || formData.serviceType || urlService} — ${urlTreatment}`
-                               : (formData.serviceType || null),
-            planId:          urlPlan                   || null,
-            allergies:       formData.allergies        || null,
-            medicalHistory:  formData.medicalHistory   || null,
-            // Used to create the client's login account when an admin approves.
-            password:        formData.password         || undefined,
-          }),
+        await apiRequest("/api/registrations", "POST", {
+          fullName:         formData.fullName.trim(),
+          email:            formData.email.trim(),
+          phone:            formData.phone.trim(),
+          dateOfBirth:      formData.dateOfBirth      || null,
+          gender:           formData.gender           || null,
+          maritalStatus:    formData.maritalStatus    || null,
+          address:          formData.address          || null,
+          emergencyContact: formData.emergencyContact || null,
+          emergencyPhone:   formData.emergencyPhone   || null,
+          serviceType:      urlTreatment
+                              ? `${SERVICE_LABELS[urlService] || formData.serviceType || urlService} — ${urlTreatment}`
+                              : (formData.serviceType || null),
+          planId:           urlPlan                   || null,
+          allergies:        formData.allergies        || null,
+          medicalHistory:   formData.medicalHistory   || null,
+          // Used to create the client's login account when an admin approves.
+          password:         formData.password,
         });
-      } catch {
-        // fetch() only rejects on network-level failures: server unreachable,
-        // DNS failure, or the browser blocking the response (CORS).
-        throw new Error(
-          "Couldn't reach the server. Please check your connection and try again — " +
-            `if this keeps happening, contact us at ${CONTACT.email} or ${CONTACT.phone}.`
-        );
-      }
-
-      if (!apiRes.ok) {
-        const json = await apiRes.json().catch(() => ({}));
-        const msg = (json as { message?: string }).message;
-        // 409 = already registered, treat as success so user can see payment info
-        if (apiRes.status !== 409) {
-          throw new Error(msg || "Submission failed. Please try again.");
+      } catch (error) {
+        // Older deployments may still return 409 for a retry. The original
+        // registration can remain in place, so do not strand the client.
+        if (!(error instanceof ApiError && error.status === 409)) {
+          throw error;
         }
       }
 

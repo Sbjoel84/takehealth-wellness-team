@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Save, User, Bell, Lock, Mail, Camera, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Save, User, Bell, Lock, Mail, Camera, Eye, EyeOff, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

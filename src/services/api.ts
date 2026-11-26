@@ -86,6 +86,7 @@ export const apiRequest = async <T = unknown>(
       });
     } catch (err) {
       clearTimeout(timeoutId);
+
       if ((err as Error).name === "AbortError") {
         throw new ApiError(
           "Request timed out — the server may be waking up. Please try again in a moment.",
@@ -108,6 +109,13 @@ export const apiRequest = async <T = unknown>(
     }
 
     clearTimeout(timeoutId);
+
+    // Persist Better Auth's bearer token so sessions survive blocked
+    // third-party cookies in cross-domain deployments.
+    const authTokenFromResponse = res.headers.get("set-auth-token");
+    if (authTokenFromResponse) {
+      localStorage.setItem("token", authTokenFromResponse);
+    }
 
     // Handle 401 — only redirect when there was an active session to expire.
     // If there was never a session (e.g. dev mode, no credentials) just throw so

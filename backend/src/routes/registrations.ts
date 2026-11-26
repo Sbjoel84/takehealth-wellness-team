@@ -20,39 +20,67 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const normalizedEmail = String(email).toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      res.status(400).json({ success: false, message: "Enter a valid email address" });
+      return;
+    }
+
     if (password != null && String(password).length < 8) {
       res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
       return;
     }
 
     const existing = await prisma.clientRegistration.findFirst({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: normalizedEmail },
     });
 
+    if (existing?.status === "APPROVED") {
+      res.status(409).json({ success: false, message: "This email is already registered and approved" });
+      return;
+    }
+
+    const registrationData = {
+      fullName: String(fullName).trim(),
+      email: normalizedEmail,
+      phone: String(phone).trim(),
+      dateOfBirth: dateOfBirth || null,
+      gender: gender || null,
+      maritalStatus: maritalStatus || null,
+      address: address || null,
+      emergencyContact: emergencyContact || null,
+      emergencyPhone: emergencyPhone || null,
+      serviceType: serviceType || null,
+      planId: planId || null,
+      allergies: allergies || null,
+      medicalHistory: medicalHistory || null,
+      password: password ? String(password) : null,
+      status: "PENDING",
+    };
+
     if (existing) {
-      res.status(409).json({ success: false, message: "A registration with this email already exists" });
+      const registration = await prisma.clientRegistration.update({
+        where: { id: existing.id },
+        data: { ...registrationData, reviewedAt: null, reviewedBy: null, adminNotes: null, patientId: null },
+      });
+
+      await logActivity({
+        type: "REGISTRATION_SUBMITTED",
+        message: `Registration updated for ${registration.serviceType || "wellness services"}.`,
+        patientId: null,
+        metadata: { registrationId: registration.id, email: registration.email },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Registration updated. Our team will review your application within 24 hours.",
+        data: { id: registration.id },
+      });
       return;
     }
 
     const registration = await prisma.clientRegistration.create({
-      data: {
-        fullName: fullName.trim(),
-        email: email.toLowerCase().trim(),
-        phone: phone.trim(),
-        dateOfBirth: dateOfBirth || null,
-        gender: gender || null,
-        maritalStatus: maritalStatus || null,
-        address: address || null,
-        emergencyContact: emergencyContact || null,
-        emergencyPhone: emergencyPhone || null,
-        serviceType: serviceType || null,
-        planId: planId || null,
-        allergies: allergies || null,
-        medicalHistory: medicalHistory || null,
-        // Held only until an admin approves and the login account is created.
-        password: password ? String(password) : null,
-        status: "PENDING",
-      },
+      data: registrationData,
     });
 
     await logActivity({
